@@ -124,7 +124,7 @@ git init
 git add .
 git commit -m "Primeiro commit"
 git branch -M main
-git remote add origin https://github.com/seu-usuario/tres-setores.git
+git remote add origin https://github.com/ArthurDouradoDev/macroeconomia-usp.git
 git push -u origin main
 ```
 

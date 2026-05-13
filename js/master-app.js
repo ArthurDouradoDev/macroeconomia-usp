@@ -14,6 +14,7 @@ let _currentResult = null;    // resultado da rodada sendo revelada
 let _allResults    = {};      // resultados de todas as rodadas
 let _animPhase     = 0;
 let _animTimers    = [];
+let _manualMode    = true;    // padrão: avançar fases manualmente
 
 // ── Utilitários de UI ─────────────────────────────────────────
 
@@ -353,39 +354,88 @@ async function closeRoundConfirmed() {
   setLoading(btn, true);
 
   try {
-    // Buscar submissões e jogadores
     const [subs, prevResultRaw] = await Promise.all([
       getSubmissions(_roomCode, round),
       round >= 2 ? getRoundResult(_roomCode, round - 1) : Promise.resolve(null)
     ]);
 
-    const prevResult = prevResultRaw;
-
-    // Calcular resultado
-    const result = computeRoundResult(subs, _players, round, prevResult);
-
-    // Salvar no Firebase
+    const result = computeRoundResult(subs, _players, round, prevResultRaw);
     await saveRoundResult(_roomCode, round, result);
-
-    // Atualizar status para revelação
     await updateRoomStatus(_roomCode, `results_${round}`, round);
 
   } catch (err) {
     console.error('Erro ao fechar rodada:', err);
+  } finally {
+    // Sempre restaura o botão — se deu certo a view muda de qualquer forma
     setLoading(btn, false);
   }
 }
 
 // ── Animação de revelação ─────────────────────────────────────
 
+function activateRevealPhase(n) {
+  _animPhase = n;
+  document.querySelectorAll('.calc-phase').forEach(el => el.classList.remove('active'));
+  document.getElementById(`phase-${n}`).classList.add('active');
+  for (let i = 1; i <= 7; i++) {
+    const dot = document.getElementById(`pdot-${i}`);
+    if (!dot) continue;
+    dot.className = 'phase-dot ' + (i < n ? 'done' : i === n ? 'current' : '');
+  }
+  if (n === 6) runCountUp(_currentResult.Y);
+
+  // Em modo manual: mostrar "Próximo" nas fases 1-6, ocultar na fase 7
+  const nextBtn = document.getElementById('btn-next-phase');
+  if (nextBtn) nextBtn.style.display = (_manualMode && n < 7) ? '' : 'none';
+}
+
+function manualNextPhase() {
+  if (_animPhase < 7) activateRevealPhase(_animPhase + 1);
+}
+
+function toggleRevealMode() {
+  _manualMode = !_manualMode;
+  const modeBtn = document.getElementById('btn-toggle-mode');
+  const nextBtn = document.getElementById('btn-next-phase');
+
+  if (_manualMode) {
+    modeBtn.innerHTML = '<i class="ti ti-hand-click"></i> Manual';
+    modeBtn.className = 'btn btn-secondary btn-sm btn-inline';
+    // Cancelar timers automáticos restantes
+    _animTimers.forEach(t => clearTimeout(t));
+    _animTimers = [];
+    if (nextBtn) nextBtn.style.display = _animPhase < 7 ? '' : 'none';
+  } else {
+    modeBtn.innerHTML = '<i class="ti ti-player-play"></i> Auto';
+    modeBtn.className = 'btn btn-gold btn-sm btn-inline';
+    if (nextBtn) nextBtn.style.display = 'none';
+    // Disparar timers para as fases restantes a partir da atual
+    const durations = [5000, 5000, 10000, 5000, 5000, 5000, 0];
+    let elapsed = 0;
+    for (let i = _animPhase; i < durations.length - 1; i++) {
+      elapsed += durations[i];
+      const phase = i + 2;
+      const t = setTimeout(() => activateRevealPhase(phase), elapsed);
+      _animTimers.push(t);
+    }
+  }
+}
+
 function startRevealAnimation(round, result) {
   _currentResult = result;
   showView('view-reveal');
 
-  // Parar timers anteriores
   _animTimers.forEach(t => clearTimeout(t));
   _animTimers = [];
   _animPhase = 0;
+
+  // Resetar toggle para manual (padrão a cada nova rodada)
+  _manualMode = true;
+  const modeBtn = document.getElementById('btn-toggle-mode');
+  if (modeBtn) {
+    modeBtn.innerHTML = '<i class="ti ti-hand-click"></i> Manual';
+    modeBtn.className = 'btn btn-secondary btn-sm btn-inline';
+  }
 
   // Construir barra de progresso
   const prog = document.getElementById('phase-progress');
@@ -393,10 +443,8 @@ function startRevealAnimation(round, result) {
     `<div class="phase-dot" id="pdot-${i + 1}"></div>`
   ).join('');
 
-  // Carregar resultados anteriores para insights
   const prevResult = _allResults[`round_${round - 1}`] || null;
 
-  // Pré-calcular conteúdo de cada fase
   fillPhase1(result);
   fillPhase2(result, round);
   fillPhase3(result);
@@ -405,33 +453,8 @@ function startRevealAnimation(round, result) {
   fillPhase6(result);
   fillPhase7(result, prevResult, round);
 
-  // Sequência de fases (durations em ms)
-  const durations = [5000, 5000, 10000, 5000, 5000, 5000, 0];
-  let elapsed = 0;
-
-  function activatePhase(n) {
-    _animPhase = n;
-    // Resetar fases
-    document.querySelectorAll('.calc-phase').forEach(el => el.classList.remove('active'));
-    document.getElementById(`phase-${n}`).classList.add('active');
-    // Atualizar dots
-    for (let i = 1; i <= 7; i++) {
-      const dot = document.getElementById(`pdot-${i}`);
-      if (!dot) continue;
-      dot.className = 'phase-dot ' + (i < n ? 'done' : i === n ? 'current' : '');
-    }
-    // Animação especial da fase 6: count-up
-    if (n === 6) runCountUp(result.Y);
-  }
-
-  activatePhase(1);
-
-  for (let i = 0; i < durations.length - 1; i++) {
-    elapsed += durations[i];
-    const phase = i + 2;
-    const t = setTimeout(() => activatePhase(phase), elapsed);
-    _animTimers.push(t);
-  }
+  activateRevealPhase(1);
+  // Modo manual: não configura timers — o mestre clica em "Próximo"
 }
 
 function skipToResult() {
@@ -440,13 +463,7 @@ function skipToResult() {
   const round = _config?.currentRound;
   const prevResult = _allResults[`round_${round - 1}`] || null;
   fillPhase7(_currentResult, prevResult, round);
-  // Ir direto para fase 7
-  document.querySelectorAll('.calc-phase').forEach(el => el.classList.remove('active'));
-  document.getElementById('phase-7').classList.add('active');
-  for (let i = 1; i <= 7; i++) {
-    const dot = document.getElementById(`pdot-${i}`);
-    if (dot) dot.className = 'phase-dot ' + (i < 7 ? 'done' : 'current');
-  }
+  activateRevealPhase(7);
 }
 
 // Fase 1: valores de cada setor
@@ -692,6 +709,7 @@ async function advanceGame() {
     }
   } catch (err) {
     console.error(err);
+  } finally {
     setLoading(btn, false);
   }
 }

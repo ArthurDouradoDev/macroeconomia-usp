@@ -49,13 +49,17 @@
       <button class="sector-card" id="card-familias" onclick="chooseSector('familias')">
         <div class="sector-card-top">
           <div class="sector-card-icon familias">
-            <i class="ti ti-home"></i>
+            <img src="img/familias.png" class="sector-img" onload="this.style.display='block';this.nextElementSibling.style.display='none'" alt="">
+            <i class="ti ti-home sector-fallback-icon"></i>
           </div>
           <div>
             <div class="fw-700 text-lg">Familias</div>
             <div class="text-sm text-muted">Controla o consumo da economia</div>
           </div>
-          <div id="count-badge-familias" class="badge badge-green" style="margin-left:auto">0</div>
+          <div style="margin-left:auto;display:flex;flex-direction:column;align-items:flex-end;gap:.25rem">
+            <div id="count-badge-familias" class="badge badge-green">0</div>
+            <div id="balance-badge-familias" class="badge" style="display:none"></div>
+          </div>
         </div>
         <div class="sector-card-params">
           <span class="badge badge-muted">c&#8321; Propensao a consumir</span>
@@ -67,13 +71,17 @@
       <button class="sector-card" id="card-empresas" onclick="chooseSector('empresas')">
         <div class="sector-card-top">
           <div class="sector-card-icon empresas">
-            <i class="ti ti-building-factory"></i>
+            <img src="img/empresas.png" class="sector-img" onload="this.style.display='block';this.nextElementSibling.style.display='none'" alt="">
+            <i class="ti ti-building-factory sector-fallback-icon"></i>
           </div>
           <div>
             <div class="fw-700 text-lg">Empresas</div>
             <div class="text-sm text-muted">Controla o investimento</div>
           </div>
-          <div id="count-badge-empresas" class="badge badge-blue" style="margin-left:auto">0</div>
+          <div style="margin-left:auto;display:flex;flex-direction:column;align-items:flex-end;gap:.25rem">
+            <div id="count-badge-empresas" class="badge badge-blue">0</div>
+            <div id="balance-badge-empresas" class="badge" style="display:none"></div>
+          </div>
         </div>
         <div class="sector-card-params">
           <span class="badge badge-muted">I Investimento agregado</span>
@@ -84,13 +92,17 @@
       <button class="sector-card" id="card-governo" onclick="chooseSector('governo')">
         <div class="sector-card-top">
           <div class="sector-card-icon governo">
-            <i class="ti ti-building-bank"></i>
+            <img src="img/governo.png" class="sector-img" onload="this.style.display='block';this.nextElementSibling.style.display='none'" alt="">
+            <i class="ti ti-building-bank sector-fallback-icon"></i>
           </div>
           <div>
             <div class="fw-700 text-lg">Governo</div>
             <div class="text-sm text-muted">Controla a politica fiscal</div>
           </div>
-          <div id="count-badge-governo" class="badge badge-gold" style="margin-left:auto">0</div>
+          <div style="margin-left:auto;display:flex;flex-direction:column;align-items:flex-end;gap:.25rem">
+            <div id="count-badge-governo" class="badge badge-gold">0</div>
+            <div id="balance-badge-governo" class="badge" style="display:none"></div>
+          </div>
         </div>
         <div class="sector-card-params">
           <span class="badge badge-muted">G Gastos do governo</span>
@@ -154,37 +166,38 @@
 
           <div class="slider-group">
             <div class="slider-header">
-              <span class="slider-label">c&#8321; &mdash; Propensao marginal a consumir</span>
-              <span class="slider-value mono" id="val-c1">0.70</span>
+              <span class="slider-label">Propensao a consumir</span>
+              <span class="slider-value mono" id="val-c1">70%</span>
             </div>
-            <p class="slider-help">De cada R$1 de renda, quanto voce gasta? O resto vira poupanca.</p>
+            <p class="slider-help" id="helper-c1">De cada R$100 que voce ganha, voce gasta R$70 e poupa R$30.</p>
             <div id="badge-c1-limit" class="badge badge-red mb-2" style="display:none">
               <i class="ti ti-alert-triangle"></i> Limite alterado pelo evento
             </div>
             <input type="range" id="slider-c1"
-              min="0.10" max="0.95" step="0.01" value="0.70"
+              min="10" max="95" step="1" value="70"
               oninput="updateSlider('c1', this.value)">
             <div class="slider-limits">
-              <span id="min-c1">0.10</span>
-              <span id="max-c1">0.95</span>
+              <span id="min-c1">10%</span>
+              <span id="max-c1">95%</span>
             </div>
           </div>
 
           <div class="slider-group">
             <div class="slider-header">
-              <span class="slider-label">c&#8320; &mdash; Consumo autonomo (R$ bi)</span>
-              <span class="slider-value mono" id="val-c0">50</span>
+              <span class="slider-label">Gasto minimo familiar por mes</span>
+              <span class="slider-value mono" id="val-c0">R$&nbsp;2.500</span>
             </div>
-            <p class="slider-help">O minimo que sua familia gasta, mesmo sem renda. Aluguel, comida basica, contas.</p>
-            <div id="badge-c0-limit" class="badge badge-red mb-2" style="display:none">
+            <p class="slider-help">Aluguel, comida, contas fixas. O que sua familia gasta mesmo sem renda.</p>
+            <div class="slider-helper text-muted text-sm" id="helper-c0">Equivale a R$50bi no modelo.</div>
+            <div id="badge-c0-limit" class="badge badge-red mt-2 mb-2" style="display:none">
               <i class="ti ti-alert-triangle"></i> Limite reduzido pela crise
             </div>
             <input type="range" id="slider-c0"
-              min="10" max="100" step="1" value="50"
+              min="500" max="5000" step="50" value="2500"
               oninput="updateSlider('c0', this.value)">
             <div class="slider-limits">
-              <span id="min-c0">10</span>
-              <span id="max-c0">100</span>
+              <span id="min-c0">R$500</span>
+              <span id="max-c0">R$5.000</span>
             </div>
           </div>
         </div>

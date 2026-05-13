@@ -143,15 +143,21 @@
          ════════════════════════════════════════════════════════ -->
     <div id="view-reveal" class="view">
 
-      <!-- Progresso das fases -->
-      <div class="phase-progress" id="phase-progress"></div>
-
-      <!-- Botão para pular -->
-      <div style="text-align:right; margin-bottom:1rem">
+      <!-- Controles de revelacao -->
+      <div class="reveal-controls mb-3">
+        <button class="btn btn-secondary btn-sm btn-inline" id="btn-toggle-mode" onclick="toggleRevealMode()">
+          <i class="ti ti-hand-click"></i> Manual
+        </button>
+        <button class="btn btn-primary btn-sm btn-inline" id="btn-next-phase" onclick="manualNextPhase()">
+          <i class="ti ti-arrow-right"></i> Proximo
+        </button>
         <button class="btn btn-secondary btn-sm btn-inline" onclick="skipToResult()">
-          <i class="ti ti-fast-forward"></i> Pular para resultado
+          <i class="ti ti-fast-forward"></i> Pular
         </button>
       </div>
+
+      <!-- Progresso das fases -->
+      <div class="phase-progress" id="phase-progress"></div>
 
       <!-- Fase 1: Coletando decisoes -->
       <div class="calc-phase" id="phase-1">

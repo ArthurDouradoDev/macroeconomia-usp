@@ -224,18 +224,39 @@ function setupSectorView() {
 }
 
 function updateSectorCounts() {
+  const totalPlayers = Object.values(_players).length;
+  // Nenhum setor pode ter mais da metade dos jogadores (min 1)
+  const effectiveCap = Math.min(15, Math.max(1, Math.floor(totalPlayers / 2)));
+
   for (const sector of ['familias', 'empresas', 'governo']) {
     const count = Object.values(_players).filter(p => p.sector === sector).length;
     const el    = document.getElementById(`count-badge-${sector}`);
     if (el) el.textContent = count;
 
-    // Desabilitar se lotado (15 jogadores)
     const btn = document.getElementById(`card-${sector}`);
     if (btn) {
-      const isMine   = _sector === sector;
-      const isFull   = count >= 15 && !isMine;
-      btn.disabled   = isFull;
+      const isMine = _sector === sector;
+      const isFull = count >= effectiveCap && !isMine;
+      btn.disabled = isFull;
       btn.classList.toggle(`selected-${sector}`, isMine);
+      btn.title = isFull ? 'Setor muito popular. Escolha outro para equilibrar a economia.' : '';
+    }
+
+    // Badge de equilíbrio
+    const balanceBadge = document.getElementById(`balance-badge-${sector}`);
+    if (balanceBadge) {
+      const ratio = effectiveCap > 0 ? count / effectiveCap : 0;
+      if (count >= effectiveCap) {
+        balanceBadge.textContent = 'Cheio';
+        balanceBadge.className = 'badge badge-red';
+        balanceBadge.style.display = '';
+      } else if (ratio >= 0.6 && count > 0) {
+        balanceBadge.textContent = 'Populoso';
+        balanceBadge.className = 'badge badge-gold';
+        balanceBadge.style.display = '';
+      } else {
+        balanceBadge.style.display = 'none';
+      }
     }
   }
 }
@@ -321,10 +342,11 @@ function applyLimitsToSliders(round) {
   const limits = _limits;
 
   if (_sector === 'familias') {
-    setSlider('c1', limits.c1.min, limits.c1.max, 0.70, 0.01);
-    setSlider('c0', limits.c0.min, limits.c0.max, 50, 1);
+    // c1: slider em % (10-95), converte /100 no submit
+    // c0: slider em R$/mês (500-5000), converte /50 no submit
+    setSlider('c1', limits.c1.min * 100, limits.c1.max * 100, 70, 1);
+    setSlider('c0', limits.c0.min * 50, limits.c0.max * 50, 2500, 50);
 
-    // Badge de limite reduzido
     const c0Limited = round === 2 && limits.c0.max < 100;
     document.getElementById('badge-c0-limit').style.display = c0Limited ? '' : 'none';
   }
@@ -332,14 +354,9 @@ function applyLimitsToSliders(round) {
   if (_sector === 'empresas') {
     setSlider('I', limits.I.min, limits.I.max, Math.min(80, limits.I.max), 1);
 
-    const iLimited = round >= 2;
+    const iLimited = round >= 2 || (round === 2 && limits.I.max < 200);
     document.getElementById('badge-I-limit').style.display = iLimited ? '' : 'none';
-    const iLimitedByCrisis = round === 2 && limits.I.max < 200;
-    if (iLimitedByCrisis) {
-      document.getElementById('badge-I-limit').style.display = '';
-    }
 
-    // Mostrar informação de poupança
     if (round >= 2 && _prevResult) {
       const infoEl = document.getElementById('invest-limit-info');
       const textEl = document.getElementById('invest-limit-text');
@@ -361,14 +378,37 @@ function applyLimitsToSliders(round) {
     const warnEl   = document.getElementById('crisis-warning');
     const warnText = document.getElementById('crisis-warning-text');
     let msg = '';
-    if (_sector === 'familias') msg = 'Crise de confianca: o limite maximo de c₀ caiu de R$100bi para R$60bi.';
-    else if (_sector === 'empresas') msg = 'Crise de confianca: o limite maximo de I caiu de R$200bi para R$120bi.';
+    if (_sector === 'familias') {
+      const maxMensal = (limits.c0.max * 50).toLocaleString('pt-BR');
+      msg = `Crise de confianca: gasto maximo caiu para R$${maxMensal}/mes (c₀ de R$${limits.c0.max}bi).`;
+    } else if (_sector === 'empresas') {
+      msg = `Crise de confianca: o limite maximo de I caiu de R$200bi para R$${limits.I.max}bi.`;
+    }
     if (msg) {
       warnText.textContent = msg;
       warnEl.style.display = '';
     }
   } else {
     document.getElementById('crisis-warning').style.display = 'none';
+  }
+}
+
+function fmtSliderVal(id, value) {
+  if (id === 'c1') return Math.round(value) + '%';
+  if (id === 'c0') return 'R$ ' + Number(value).toLocaleString('pt-BR');
+  return Math.round(value);
+}
+
+function updateSliderHelper(id, value) {
+  if (id === 'c1') {
+    const pct = Math.round(value);
+    const el = document.getElementById('helper-c1');
+    if (el) el.textContent = `De cada R$100 que voce ganha, voce gasta R$${pct} e poupa R$${100 - pct}.`;
+  }
+  if (id === 'c0') {
+    const macro = Math.round(value / 50);
+    const el = document.getElementById('helper-c0');
+    if (el) el.textContent = `Equivale a R$${macro}bi no modelo macroeconomico.`;
   }
 }
 
@@ -386,19 +426,16 @@ function setSlider(id, min, max, defaultVal, step) {
   const safeDefault = Math.min(Math.max(defaultVal, min), max);
   slider.value = safeDefault;
 
-  if (valEl) {
-    valEl.textContent = id === 'c1' ? Number(safeDefault).toFixed(2) : Math.round(safeDefault);
-  }
-  if (minEl) minEl.textContent = id === 'c1' ? Number(min).toFixed(2) : min;
-  if (maxEl) maxEl.textContent = id === 'c1' ? Number(max).toFixed(2) : max;
+  if (valEl) valEl.textContent = fmtSliderVal(id, safeDefault);
+  if (minEl) minEl.textContent = fmtSliderVal(id, min);
+  if (maxEl) maxEl.textContent = fmtSliderVal(id, max);
+  updateSliderHelper(id, safeDefault);
 }
 
 function updateSlider(id, value) {
   const valEl = document.getElementById(`val-${id}`);
-  if (valEl) {
-    valEl.textContent = id === 'c1' ? Number(value).toFixed(2) : Math.round(value);
-  }
-  // Atualizar preview de déficit ao mover G ou T
+  if (valEl) valEl.textContent = fmtSliderVal(id, value);
+  updateSliderHelper(id, value);
   if (id === 'G' || id === 'T') updateDeficitPreview();
 }
 
@@ -435,9 +472,11 @@ async function submitDecision() {
   let values = {};
 
   if (_sector === 'familias') {
+    // slider c1 está em % (10-95) → converte para decimal (0.10-0.95)
+    // slider c0 está em R$/mês (500-5000) → converte para R$bi (10-100)
     values = {
-      c1: parseFloat(document.getElementById('slider-c1').value),
-      c0: parseFloat(document.getElementById('slider-c0').value)
+      c1: parseFloat(document.getElementById('slider-c1').value) / 100,
+      c0: parseFloat(document.getElementById('slider-c0').value) / 50
     };
   } else if (_sector === 'empresas') {
     values = {
@@ -471,13 +510,21 @@ function renderSubmittedSummary(values) {
   const el = document.getElementById('submitted-summary');
   const items = Object.entries(values).map(([k, v]) => {
     const labels = {
-      c1: 'c&#8321; Propensao a consumir',
-      c0: 'c&#8320; Consumo autonomo',
+      c1: 'Propensao a consumir',
+      c0: 'Gasto minimo familiar',
       I:  'I Investimento',
       G:  'G Gastos do governo',
       T:  'T Impostos'
     };
-    const fmt = k === 'c1' ? Number(v).toFixed(2) : `R$${Math.round(v)}bi`;
+    let fmt;
+    if (k === 'c1') {
+      fmt = `${Math.round(v * 100)}% <span class="text-muted text-sm">(c&#8321; = ${Number(v).toFixed(2)})</span>`;
+    } else if (k === 'c0') {
+      const mensal = Math.round(v * 50).toLocaleString('pt-BR');
+      fmt = `R$${mensal}/mes <span class="text-muted text-sm">(c&#8320; = R$${Math.round(v)}bi)</span>`;
+    } else {
+      fmt = `R$${Math.round(v)}bi`;
+    }
     return `<div class="sector-summary-row">
       <span class="sector-summary-label">${labels[k] || k}</span>
       <span class="sector-summary-value">${fmt}</span>
