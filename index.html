@@ -1,0 +1,296 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Tres Setores, Uma Economia</title>
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css">
+</head>
+<body>
+
+<div class="page">
+  <div class="container">
+    <div class="page-header">
+      <div class="logo-mark">EACH-USP | Macroeconomia</div>
+      <h1>Tres Setores,<br>Uma Economia</h1>
+      <p class="mt-2">Jogo educativo em tempo real sobre o modelo keynesiano</p>
+    </div>
+
+    <!-- Tabs: Entrar / Criar -->
+    <div class="tabs">
+      <button class="tab-btn active" id="tab-join" onclick="switchTab('join')">
+        <i class="ti ti-door-enter"></i> Entrar na sala
+      </button>
+      <button class="tab-btn" id="tab-create" onclick="switchTab('create')">
+        <i class="ti ti-plus"></i> Criar sala
+      </button>
+    </div>
+
+    <!-- ── PAINEL: Entrar na sala ── -->
+    <div id="panel-join">
+      <div class="card">
+        <h3 class="mb-4">Entrar como jogador</h3>
+
+        <div class="form-group">
+          <label for="input-room-code">Codigo da sala</label>
+          <input
+            type="text"
+            id="input-room-code"
+            class="input-code"
+            placeholder="ABCD"
+            maxlength="4"
+            autocomplete="off"
+            autocapitalize="characters"
+            spellcheck="false"
+          >
+        </div>
+
+        <div class="form-group">
+          <label for="input-player-name">Seu nome</label>
+          <input
+            type="text"
+            id="input-player-name"
+            placeholder="Como quer ser chamado?"
+            maxlength="20"
+            autocomplete="off"
+          >
+        </div>
+
+        <div id="join-error" class="error-msg"></div>
+
+        <button class="btn btn-primary mt-4" id="btn-join" onclick="joinRoom()">
+          <i class="ti ti-arrow-right"></i>
+          Entrar
+        </button>
+      </div>
+
+      <p class="text-sm text-muted text-center mt-4">
+        O codigo de 4 letras esta no telao da sala de aula.
+      </p>
+    </div>
+
+    <!-- ── PAINEL: Criar sala ── -->
+    <div id="panel-create" style="display:none">
+      <div class="card">
+        <h3 class="mb-4">Criar sala (modo mestre)</h3>
+
+        <div class="form-group">
+          <label for="input-master-key">Senha do mestre (4 digitos)</label>
+          <input
+            type="password"
+            id="input-master-key"
+            placeholder="ex: 1234"
+            maxlength="4"
+            inputmode="numeric"
+            autocomplete="new-password"
+          >
+          <p class="text-sm text-muted mt-2">
+            Anote essa senha. Voce precisara dela para acessar a tela do mestre.
+          </p>
+        </div>
+
+        <div id="create-error" class="error-msg"></div>
+
+        <button class="btn btn-gold mt-4" id="btn-create" onclick="handleCreateRoom()">
+          <i class="ti ti-wand"></i>
+          Criar sala
+        </button>
+      </div>
+
+      <p class="text-sm text-muted text-center mt-4">
+        Apos criar, voce sera redirecionado para a tela do mestre.
+      </p>
+    </div>
+  </div>
+</div>
+
+<!-- Indicador de conexão -->
+<div class="conn-indicator" id="conn-indicator">
+  <div class="conn-dot" id="conn-dot"></div>
+  <span id="conn-label">Conectando...</span>
+</div>
+
+<!-- Firebase SDK -->
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+<script src="js/firebase-config.js"></script>
+<script src="js/db.js"></script>
+
+<script>
+// ── Utilitários de UI ─────────────────────────────────────────
+
+function setLoading(btn, loading) {
+  if (loading) {
+    btn.disabled = true;
+    btn._originalHTML = btn.innerHTML;
+    btn.innerHTML = '<div class="spinner"></div> Aguarde...';
+  } else {
+    btn.disabled = false;
+    if (btn._originalHTML) btn.innerHTML = btn._originalHTML;
+  }
+}
+
+function showError(id, msg) {
+  const el = document.getElementById(id);
+  el.textContent = msg;
+  el.classList.add('show');
+}
+
+function clearError(id) {
+  const el = document.getElementById(id);
+  el.textContent = '';
+  el.classList.remove('show');
+}
+
+function generateRoomCode() {
+  const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+  return Array.from({ length: 4 }, () => chars[Math.floor(Math.random() * 26)]).join('');
+}
+
+function generatePlayerId() {
+  const chars = 'abcdefghijklmnopqrstuvwxyz0123456789';
+  return Array.from({ length: 8 }, () => chars[Math.floor(Math.random() * chars.length)]).join('');
+}
+
+// ── Tabs ──────────────────────────────────────────────────────
+
+function switchTab(tab) {
+  document.getElementById('panel-join').style.display    = tab === 'join'   ? '' : 'none';
+  document.getElementById('panel-create').style.display = tab === 'create' ? '' : 'none';
+  document.getElementById('tab-join').classList.toggle('active',   tab === 'join');
+  document.getElementById('tab-create').classList.toggle('active', tab === 'create');
+}
+
+// ── Entrar na sala ────────────────────────────────────────────
+
+async function joinRoom() {
+  clearError('join-error');
+  const codeInput = document.getElementById('input-room-code');
+  const nameInput = document.getElementById('input-player-name');
+  const btn       = document.getElementById('btn-join');
+
+  const code = codeInput.value.trim().toUpperCase();
+  const name = nameInput.value.trim();
+
+  // Validações locais
+  if (code.length !== 4 || !/^[A-Z]{4}$/.test(code)) {
+    showError('join-error', 'O codigo da sala deve ter 4 letras.');
+    codeInput.focus();
+    return;
+  }
+
+  if (name.length < 2) {
+    showError('join-error', 'Seu nome deve ter pelo menos 2 caracteres.');
+    nameInput.focus();
+    return;
+  }
+
+  setLoading(btn, true);
+
+  try {
+    // Verificar se sala existe
+    const exists = await roomExists(code);
+    if (!exists) {
+      showError('join-error', 'Sala nao encontrada. Verifique o codigo.');
+      return;
+    }
+
+    // Verificar se ainda está em lobby
+    const config = await getRoom(code);
+    if (!config || (config.status !== 'lobby')) {
+      showError('join-error', 'Esta sala nao esta aceitando novos jogadores.');
+      return;
+    }
+
+    // Gerar e salvar playerId
+    const playerId = generatePlayerId();
+    localStorage.setItem('playerId', playerId);
+    localStorage.setItem('playerName', name);
+    localStorage.setItem('roomCode', code);
+
+    // Criar jogador no Firebase
+    await addPlayer(code, playerId, name);
+
+    // Redirecionar
+    window.location.href = `player.html?room=${code}`;
+
+  } catch (err) {
+    console.error(err);
+    showError('join-error', 'Erro ao entrar na sala. Tente novamente.');
+  } finally {
+    setLoading(btn, false);
+  }
+}
+
+// ── Criar sala ────────────────────────────────────────────────
+
+async function handleCreateRoom() {
+  clearError('create-error');
+  const keyInput = document.getElementById('input-master-key');
+  const btn      = document.getElementById('btn-create');
+
+  const masterKey = keyInput.value.trim();
+
+  if (!/^\d{4}$/.test(masterKey)) {
+    showError('create-error', 'A senha deve ter exatamente 4 digitos numericos.');
+    keyInput.focus();
+    return;
+  }
+
+  setLoading(btn, true);
+
+  try {
+    // Gerar código único (tentar até encontrar um disponível)
+    let code;
+    let attempts = 0;
+    do {
+      code = generateRoomCode();
+      const exists = await roomExists(code);
+      if (!exists) break;
+      attempts++;
+    } while (attempts < 10);
+
+    await createRoom(code, masterKey);
+
+    // Redirecionar para tela do mestre
+    window.location.href = `master.html?room=${code}&key=${masterKey}`;
+
+  } catch (err) {
+    console.error(err);
+    showError('create-error', 'Erro ao criar a sala. Tente novamente.');
+  } finally {
+    setLoading(btn, false);
+  }
+}
+
+// ── Formatação de input ───────────────────────────────────────
+
+document.getElementById('input-room-code').addEventListener('input', function () {
+  this.value = this.value.toUpperCase().replace(/[^A-Z]/g, '');
+});
+
+document.getElementById('input-master-key').addEventListener('input', function () {
+  this.value = this.value.replace(/\D/g, '');
+});
+
+// Submeter com Enter
+document.getElementById('input-player-name').addEventListener('keydown', e => {
+  if (e.key === 'Enter') joinRoom();
+});
+document.getElementById('input-room-code').addEventListener('keydown', e => {
+  if (e.key === 'Enter') document.getElementById('input-player-name').focus();
+});
+document.getElementById('input-master-key').addEventListener('keydown', e => {
+  if (e.key === 'Enter') handleCreateRoom();
+});
+
+// ── Indicador de conexão ──────────────────────────────────────
+
+onConnectionChange(connected => {
+  document.getElementById('conn-dot').className   = 'conn-dot' + (connected ? ' connected' : '');
+  document.getElementById('conn-label').textContent = connected ? 'Conectado' : 'Sem conexao';
+});
+</script>
+</body>
+</html>

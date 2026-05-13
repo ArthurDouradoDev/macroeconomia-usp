@@ -1,0 +1,400 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Jogador | Tres Setores</title>
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css">
+</head>
+<body>
+
+<div class="page">
+  <div class="container">
+
+    <!-- ════════════════════════════════════════════════════════
+         VIEW: Carregando
+         ════════════════════════════════════════════════════════ -->
+    <div id="view-loading" class="view active">
+      <div class="dots-loading" style="padding-top:40vh">
+        <span></span><span></span><span></span>
+      </div>
+    </div>
+
+    <!-- ════════════════════════════════════════════════════════
+         VIEW: Erro de acesso
+         ════════════════════════════════════════════════════════ -->
+    <div id="view-error" class="view">
+      <div style="text-align:center;padding:4rem 0">
+        <i class="ti ti-mood-sad" style="font-size:3rem;color:var(--red)"></i>
+        <h2 class="mt-4">Algo deu errado</h2>
+        <p class="mt-2" id="error-message">Erro desconhecido.</p>
+        <a href="index.html" class="btn btn-secondary btn-inline mt-6">
+          <i class="ti ti-arrow-left"></i> Voltar ao inicio
+        </a>
+      </div>
+    </div>
+
+    <!-- ════════════════════════════════════════════════════════
+         VIEW: Selecao de setor
+         ════════════════════════════════════════════════════════ -->
+    <div id="view-sector" class="view">
+      <div class="page-header">
+        <div class="logo-mark">Sala <span id="sector-room-code" class="mono text-green"></span> | <span id="sector-player-name"></span></div>
+        <h2>Escolha seu setor</h2>
+        <p class="mt-2">Cada setor controla um parte da economia. Voce pode mudar enquanto o jogo nao iniciou.</p>
+      </div>
+
+      <!-- Setor Familias -->
+      <button class="sector-card" id="card-familias" onclick="chooseSector('familias')">
+        <div class="sector-card-top">
+          <div class="sector-card-icon familias">
+            <i class="ti ti-home"></i>
+          </div>
+          <div>
+            <div class="fw-700 text-lg">Familias</div>
+            <div class="text-sm text-muted">Controla o consumo da economia</div>
+          </div>
+          <div id="count-badge-familias" class="badge badge-green" style="margin-left:auto">0</div>
+        </div>
+        <div class="sector-card-params">
+          <span class="badge badge-muted">c&#8321; Propensao a consumir</span>
+          <span class="badge badge-muted">c&#8320; Consumo autonomo</span>
+        </div>
+      </button>
+
+      <!-- Setor Empresas -->
+      <button class="sector-card" id="card-empresas" onclick="chooseSector('empresas')">
+        <div class="sector-card-top">
+          <div class="sector-card-icon empresas">
+            <i class="ti ti-building-factory"></i>
+          </div>
+          <div>
+            <div class="fw-700 text-lg">Empresas</div>
+            <div class="text-sm text-muted">Controla o investimento</div>
+          </div>
+          <div id="count-badge-empresas" class="badge badge-blue" style="margin-left:auto">0</div>
+        </div>
+        <div class="sector-card-params">
+          <span class="badge badge-muted">I Investimento agregado</span>
+        </div>
+      </button>
+
+      <!-- Setor Governo -->
+      <button class="sector-card" id="card-governo" onclick="chooseSector('governo')">
+        <div class="sector-card-top">
+          <div class="sector-card-icon governo">
+            <i class="ti ti-building-bank"></i>
+          </div>
+          <div>
+            <div class="fw-700 text-lg">Governo</div>
+            <div class="text-sm text-muted">Controla a politica fiscal</div>
+          </div>
+          <div id="count-badge-governo" class="badge badge-gold" style="margin-left:auto">0</div>
+        </div>
+        <div class="sector-card-params">
+          <span class="badge badge-muted">G Gastos do governo</span>
+          <span class="badge badge-muted">T Impostos</span>
+        </div>
+      </button>
+
+      <div id="sector-error" class="error-msg"></div>
+    </div>
+
+    <!-- ════════════════════════════════════════════════════════
+         VIEW: Aguardando inicio da rodada
+         ════════════════════════════════════════════════════════ -->
+    <div id="view-waiting" class="view">
+      <div class="page-header">
+        <div class="logo-mark">Sala <span class="waiting-room-code mono text-green"></span></div>
+        <h2 id="waiting-title">Aguardando...</h2>
+      </div>
+
+      <div class="card text-center" style="padding:2rem">
+        <div id="waiting-sector-icon" style="font-size:3rem;margin-bottom:1rem"></div>
+        <div class="fw-700 text-lg" id="waiting-sector-name"></div>
+        <p class="mt-2" id="waiting-message">Aguardando o mestre iniciar a rodada...</p>
+        <div class="dots-loading mt-4">
+          <span></span><span></span><span></span>
+        </div>
+      </div>
+    </div>
+
+    <!-- ════════════════════════════════════════════════════════
+         VIEW: Submissao (rodada ativa)
+         ════════════════════════════════════════════════════════ -->
+    <div id="view-submit" class="view">
+
+      <!-- Banner da rodada -->
+      <div class="round-banner" id="submit-banner">
+        <div class="round-banner-round" id="submit-round-label"></div>
+        <div class="round-banner-event" id="submit-event-name"></div>
+        <div class="round-banner-desc" id="submit-event-desc"></div>
+      </div>
+
+      <!-- Aviso de limite reduzido (rodada 2) -->
+      <div id="crisis-warning" class="error-msg mb-4" style="display:none">
+        <i class="ti ti-alert-triangle"></i>
+        <span id="crisis-warning-text"></span>
+      </div>
+
+      <!-- Restricao de investimento (Empresas, rodadas 2/3) -->
+      <div id="invest-limit-info" class="card mb-4" style="display:none">
+        <div class="fw-700 mb-1"><i class="ti ti-info-circle text-blue"></i> Restricao de investimento</div>
+        <div class="text-sm" id="invest-limit-text"></div>
+        <div id="undercap-warning" style="display:none" class="badge badge-red mt-2">
+          <i class="ti ti-alert-triangle"></i> Economia descapitalizada
+        </div>
+      </div>
+
+      <!-- Sliders - Familias -->
+      <div id="sliders-familias" style="display:none">
+        <div class="card">
+          <h4 class="mb-4">Decisoes do setor Familias</h4>
+
+          <div class="slider-group">
+            <div class="slider-header">
+              <span class="slider-label">c&#8321; &mdash; Propensao marginal a consumir</span>
+              <span class="slider-value mono" id="val-c1">0.70</span>
+            </div>
+            <p class="slider-help">De cada R$1 de renda, quanto voce gasta? O resto vira poupanca.</p>
+            <div id="badge-c1-limit" class="badge badge-red mb-2" style="display:none">
+              <i class="ti ti-alert-triangle"></i> Limite alterado pelo evento
+            </div>
+            <input type="range" id="slider-c1"
+              min="0.10" max="0.95" step="0.01" value="0.70"
+              oninput="updateSlider('c1', this.value)">
+            <div class="slider-limits">
+              <span id="min-c1">0.10</span>
+              <span id="max-c1">0.95</span>
+            </div>
+          </div>
+
+          <div class="slider-group">
+            <div class="slider-header">
+              <span class="slider-label">c&#8320; &mdash; Consumo autonomo (R$ bi)</span>
+              <span class="slider-value mono" id="val-c0">50</span>
+            </div>
+            <p class="slider-help">O minimo que sua familia gasta, mesmo sem renda. Aluguel, comida basica, contas.</p>
+            <div id="badge-c0-limit" class="badge badge-red mb-2" style="display:none">
+              <i class="ti ti-alert-triangle"></i> Limite reduzido pela crise
+            </div>
+            <input type="range" id="slider-c0"
+              min="10" max="100" step="1" value="50"
+              oninput="updateSlider('c0', this.value)">
+            <div class="slider-limits">
+              <span id="min-c0">10</span>
+              <span id="max-c0">100</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Sliders - Empresas -->
+      <div id="sliders-empresas" style="display:none">
+        <div class="card">
+          <h4 class="mb-4">Decisoes do setor Empresas</h4>
+
+          <div class="slider-group">
+            <div class="slider-header">
+              <span class="slider-label">I &mdash; Investimento agregado (R$ bi)</span>
+              <span class="slider-value mono" id="val-I">80</span>
+            </div>
+            <p class="slider-help">Quanto as empresas investem em maquinas, fabricas e estoques.</p>
+            <div id="badge-I-limit" class="badge badge-red mb-2" style="display:none">
+              <i class="ti ti-alert-triangle"></i> Limite reduzido pela crise
+            </div>
+            <input type="range" id="slider-I"
+              min="10" max="200" step="1" value="80"
+              oninput="updateSlider('I', this.value)">
+            <div class="slider-limits">
+              <span id="min-I">10</span>
+              <span id="max-I">200</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Sliders - Governo -->
+      <div id="sliders-governo" style="display:none">
+        <div class="card">
+          <h4 class="mb-4">Decisoes do setor Governo</h4>
+
+          <div class="slider-group">
+            <div class="slider-header">
+              <span class="slider-label">G &mdash; Gastos do governo (R$ bi)</span>
+              <span class="slider-value mono" id="val-G">100</span>
+            </div>
+            <p class="slider-help">Quanto o governo gasta em estradas, hospitais, educacao.</p>
+            <input type="range" id="slider-G"
+              min="20" max="200" step="1" value="100"
+              oninput="updateSlider('G', this.value)">
+            <div class="slider-limits">
+              <span id="min-G">20</span>
+              <span id="max-G">200</span>
+            </div>
+          </div>
+
+          <div class="slider-group">
+            <div class="slider-header">
+              <span class="slider-label">T &mdash; Impostos (R$ bi)</span>
+              <span class="slider-value mono" id="val-T">100</span>
+            </div>
+            <p class="slider-help">Quanto o governo cobra de impostos. Mais T = menos renda disponivel para familias.</p>
+            <input type="range" id="slider-T"
+              min="20" max="200" step="1" value="100"
+              oninput="updateSlider('T', this.value)">
+            <div class="slider-limits">
+              <span id="min-T">20</span>
+              <span id="max-T">200</span>
+            </div>
+          </div>
+
+          <!-- Preview do déficit -->
+          <div class="card mt-3" id="deficit-preview" style="background:var(--bg-600)">
+            <div class="text-sm text-muted mb-1">Deficit fiscal atual (G - T)</div>
+            <div class="text-xl fw-700 mono" id="deficit-value">0</div>
+            <div class="text-sm" id="deficit-status"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Botão de envio -->
+      <div class="mt-4">
+        <button class="btn btn-primary" id="btn-submit" onclick="submitDecision()">
+          <i class="ti ti-send"></i> Enviar minha decisao
+        </button>
+        <div id="submit-error" class="error-msg mt-3"></div>
+      </div>
+    </div>
+
+    <!-- ════════════════════════════════════════════════════════
+         VIEW: Confirmacao de envio (aguardando fechamento)
+         ════════════════════════════════════════════════════════ -->
+    <div id="view-submitted" class="view">
+      <div class="page-header">
+        <h2>Decisao enviada!</h2>
+        <p class="mt-2">Seus valores foram registrados. Aguarde o mestre fechar a rodada.</p>
+      </div>
+
+      <div class="card mb-4" id="submitted-summary"></div>
+
+      <div class="card text-center" style="padding:1.5rem">
+        <p class="text-muted">Voce pode alterar sua decisao enquanto a rodada estiver aberta.</p>
+        <button class="btn btn-secondary mt-4" onclick="goBackToSubmit()">
+          <i class="ti ti-edit"></i> Alterar minha decisao
+        </button>
+      </div>
+
+      <div class="dots-loading mt-4">
+        <span></span><span></span><span></span>
+      </div>
+    </div>
+
+    <!-- ════════════════════════════════════════════════════════
+         VIEW: Resultado da rodada
+         ════════════════════════════════════════════════════════ -->
+    <div id="view-result" class="view">
+      <div class="page-header">
+        <div class="logo-mark" id="result-round-label"></div>
+        <h2>Resultado da Rodada</h2>
+      </div>
+
+      <!-- PIB grande -->
+      <div class="result-pib card mb-4">
+        <div class="result-pib-label">PIB de Equilibrio</div>
+        <div class="result-pib-value" id="result-Y">0</div>
+        <div class="result-pib-unit">bilhoes de reais</div>
+        <!-- Comparacao com rodada anterior -->
+        <div id="result-comparison" class="comparison-row mt-3" style="justify-content:center"></div>
+      </div>
+
+      <!-- Contribuicao do setor -->
+      <div class="card mb-4">
+        <h4 class="mb-3" id="result-sector-title">Sua contribuicao</h4>
+        <div id="result-sector-detail"></div>
+      </div>
+
+      <!-- Metricas gerais -->
+      <div class="card mb-4">
+        <h4 class="mb-3">Indicadores da economia</h4>
+        <div class="metrics-grid" id="result-metrics"></div>
+      </div>
+
+      <!-- Frase contextual -->
+      <div class="card mb-4">
+        <div class="insight-list" id="result-insights"></div>
+      </div>
+
+      <div class="dots-loading">
+        <span></span><span></span><span></span>
+      </div>
+      <p class="text-sm text-muted text-center mt-2">Aguardando o mestre avancar para a proxima rodada...</p>
+    </div>
+
+    <!-- ════════════════════════════════════════════════════════
+         VIEW: Resultado final (3 rodadas)
+         ════════════════════════════════════════════════════════ -->
+    <div id="view-final" class="view">
+      <div class="page-header">
+        <h2>Resultado Final</h2>
+        <p class="mt-2">Voce participou das 3 rodadas!</p>
+      </div>
+
+      <!-- Grafico de barras -->
+      <div class="card mb-4">
+        <h4 class="mb-2">Evolucao do PIB</h4>
+        <div class="bar-chart" id="final-bar-chart"></div>
+      </div>
+
+      <!-- Destaque -->
+      <div class="card mb-4">
+        <h4 class="mb-3">Melhor e pior rodada</h4>
+        <div id="final-highlights"></div>
+      </div>
+
+      <!-- Resumo do setor -->
+      <div class="card mb-4">
+        <h4 class="mb-3" id="final-sector-title">Resumo do seu setor</h4>
+        <div id="final-sector-summary"></div>
+      </div>
+
+      <!-- Conclusao -->
+      <div class="card">
+        <h4 class="mb-3">Conclusao</h4>
+        <ul class="insight-list" id="final-conclusion"></ul>
+      </div>
+    </div>
+
+    <!-- ════════════════════════════════════════════════════════
+         VIEW: Sala encerrada
+         ════════════════════════════════════════════════════════ -->
+    <div id="view-closed" class="view">
+      <div style="text-align:center;padding:4rem 0">
+        <i class="ti ti-circle-check" style="font-size:3rem;color:var(--green)"></i>
+        <h2 class="mt-4">Jogo encerrado</h2>
+        <p class="mt-2">O apresentador encerrou a sala. Obrigado por participar!</p>
+        <a href="index.html" class="btn btn-secondary btn-inline mt-6">
+          <i class="ti ti-home"></i> Inicio
+        </a>
+      </div>
+    </div>
+
+  </div><!-- /container -->
+</div><!-- /page -->
+
+<!-- Indicador de conexão -->
+<div class="conn-indicator" id="conn-indicator">
+  <div class="conn-dot" id="conn-dot"></div>
+  <span id="conn-label">Conectando...</span>
+</div>
+
+<!-- Firebase SDK -->
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+<script src="js/firebase-config.js"></script>
+<script src="js/db.js"></script>
+<script src="js/game-engine.js"></script>
+<script src="js/player-app.js"></script>
+</body>
+</html>

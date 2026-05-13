@@ -1,0 +1,338 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Mestre | Tres Setores</title>
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css">
+</head>
+<body>
+
+<div class="page">
+  <div class="container">
+
+    <!-- ════════════════════════════════════════════════════════
+         VIEW: Login do Mestre
+         ════════════════════════════════════════════════════════ -->
+    <div id="view-login" class="view active">
+      <div class="page-header">
+        <div class="logo-mark">EACH-USP | Modo Mestre</div>
+        <h1>Tela do Mestre</h1>
+        <p class="mt-2">Digite o codigo da sala e sua senha para continuar.</p>
+      </div>
+
+      <div class="card">
+        <div class="form-group">
+          <label for="m-room-code">Codigo da sala</label>
+          <input type="text" id="m-room-code" class="input-code" placeholder="ABCD"
+            maxlength="4" autocapitalize="characters" autocomplete="off" spellcheck="false">
+        </div>
+        <div class="form-group">
+          <label for="m-master-key">Senha do mestre</label>
+          <input type="password" id="m-master-key" placeholder="4 digitos"
+            maxlength="4" inputmode="numeric">
+        </div>
+        <div id="login-error" class="error-msg"></div>
+        <button class="btn btn-gold mt-4" id="btn-login" onclick="masterLogin()">
+          <i class="ti ti-lock-open"></i> Acessar sala
+        </button>
+      </div>
+    </div>
+
+    <!-- ════════════════════════════════════════════════════════
+         VIEW: Lobby
+         ════════════════════════════════════════════════════════ -->
+    <div id="view-lobby" class="view">
+      <div class="page-header">
+        <div class="logo-mark">Sala: <span id="lobby-room-code" class="mono text-green"></span></div>
+        <h2>Lobby</h2>
+      </div>
+
+      <!-- Codigo grande para projeção -->
+      <div class="room-code-display mb-6">
+        <div class="room-code-label">Codigo de acesso</div>
+        <div class="room-code-value" id="lobby-code-big"></div>
+        <p class="text-sm text-muted mt-2">Peça aos alunos que acessem o site e digitem esse codigo</p>
+      </div>
+
+      <!-- Contadores de setores -->
+      <div id="lobby-sectors" class="lobby-sectors mb-4">
+        <div class="card">
+          <div class="sector-card-top">
+            <div class="sector-card-icon familias"><i class="ti ti-home"></i></div>
+            <div>
+              <div class="fw-700">Familias</div>
+              <div class="text-sm text-muted">c&#8321; e c&#8320;</div>
+            </div>
+          </div>
+          <div class="text-2xl fw-700 mono text-green" id="count-familias">0</div>
+          <div class="text-sm text-muted">jogadores</div>
+        </div>
+        <div class="card">
+          <div class="sector-card-top">
+            <div class="sector-card-icon empresas"><i class="ti ti-building-factory"></i></div>
+            <div>
+              <div class="fw-700">Empresas</div>
+              <div class="text-sm text-muted">Investimento (I)</div>
+            </div>
+          </div>
+          <div class="text-2xl fw-700 mono text-blue" id="count-empresas">0</div>
+          <div class="text-sm text-muted">jogadores</div>
+        </div>
+        <div class="card">
+          <div class="sector-card-top">
+            <div class="sector-card-icon governo"><i class="ti ti-building-bank"></i></div>
+            <div>
+              <div class="fw-700">Governo</div>
+              <div class="text-sm text-muted">G e T</div>
+            </div>
+          </div>
+          <div class="text-2xl fw-700 mono text-gold" id="count-governo">0</div>
+          <div class="text-sm text-muted">jogadores</div>
+        </div>
+      </div>
+
+      <!-- Lista de jogadores -->
+      <div class="card mb-4">
+        <h4 class="mb-3">Jogadores conectados (<span id="total-players">0</span>)</h4>
+        <div class="player-list" id="player-list"></div>
+      </div>
+
+      <div id="lobby-warning" class="error-msg mb-4">
+        Cada setor precisa de pelo menos 1 jogador para iniciar.
+      </div>
+
+      <button class="btn btn-primary" id="btn-start-round" onclick="startRound(1)" disabled>
+        <i class="ti ti-play"></i> Iniciar Rodada 1
+      </button>
+    </div>
+
+    <!-- ════════════════════════════════════════════════════════
+         VIEW: Rodada Ativa
+         ════════════════════════════════════════════════════════ -->
+    <div id="view-round" class="view">
+
+      <div class="round-banner" id="round-banner-active">
+        <div class="round-banner-round" id="round-label-active"></div>
+        <div class="round-banner-event" id="round-event-name-active"></div>
+        <div class="round-banner-desc" id="round-event-desc-active"></div>
+      </div>
+
+      <!-- Temporizador -->
+      <div class="card mb-4">
+        <div class="timer-display">
+          <div class="timer-value" id="timer-display">3:00</div>
+          <div class="timer-label">Tempo restante (indicativo)</div>
+        </div>
+      </div>
+
+      <!-- Contadores de submissão -->
+      <div class="card mb-4">
+        <h4 class="mb-3">Submissoes em tempo real</h4>
+        <div class="submission-counts" id="submission-counts"></div>
+      </div>
+
+      <button class="btn btn-danger" id="btn-close-round" onclick="requestCloseRound()">
+        <i class="ti ti-flag"></i> Fechar Rodada e Calcular
+      </button>
+    </div>
+
+    <!-- ════════════════════════════════════════════════════════
+         VIEW: Animacao de Calculo (Revelacao)
+         ════════════════════════════════════════════════════════ -->
+    <div id="view-reveal" class="view">
+
+      <!-- Progresso das fases -->
+      <div class="phase-progress" id="phase-progress"></div>
+
+      <!-- Botão para pular -->
+      <div style="text-align:right; margin-bottom:1rem">
+        <button class="btn btn-secondary btn-sm btn-inline" onclick="skipToResult()">
+          <i class="ti ti-fast-forward"></i> Pular para resultado
+        </button>
+      </div>
+
+      <!-- Fase 1: Coletando decisoes -->
+      <div class="calc-phase" id="phase-1">
+        <div class="card">
+          <h3 class="mb-4 text-gold">Coletando decisoes dos setores...</h3>
+          <div id="phase1-sectors"></div>
+        </div>
+      </div>
+
+      <!-- Fase 2: Verificando restricoes -->
+      <div class="calc-phase" id="phase-2">
+        <div class="card">
+          <h3 class="mb-4 text-gold">Verificando restricoes...</h3>
+          <div id="phase2-content"></div>
+        </div>
+      </div>
+
+      <!-- Fase 3: Montando a equacao -->
+      <div class="calc-phase" id="phase-3">
+        <div class="card">
+          <h3 class="mb-4 text-gold">Montando a equacao...</h3>
+          <div class="equation-display" id="phase3-equation"></div>
+        </div>
+      </div>
+
+      <!-- Fase 4: Multiplicador -->
+      <div class="calc-phase" id="phase-4">
+        <div class="card">
+          <h3 class="mb-4 text-gold">Calculando o multiplicador...</h3>
+          <div class="equation-display" id="phase4-mult"></div>
+          <div class="big-number pulse-green" id="phase4-number"></div>
+        </div>
+      </div>
+
+      <!-- Fase 5: Gasto autonomo -->
+      <div class="calc-phase" id="phase-5">
+        <div class="card">
+          <h3 class="mb-4 text-gold">Calculando o gasto autonomo...</h3>
+          <div class="equation-display" id="phase5-auto"></div>
+        </div>
+      </div>
+
+      <!-- Fase 6: Resultado final (PIB) -->
+      <div class="calc-phase" id="phase-6">
+        <div class="card">
+          <h3 class="mb-4 text-gold">Resultado: PIB de Equilibrio</h3>
+          <div class="result-pib">
+            <div class="result-pib-label">PIB de Equilibrio</div>
+            <div class="result-pib-value" id="phase6-Y">0</div>
+            <div class="result-pib-unit">bilhoes de reais</div>
+          </div>
+          <div class="metrics-grid metrics-grid-4 mt-4" id="phase6-metrics"></div>
+          <div class="is-verify mt-4" id="phase6-is"></div>
+        </div>
+      </div>
+
+      <!-- Fase 7: Painel resumo permanente -->
+      <div class="calc-phase" id="phase-7">
+        <div class="card mb-4">
+          <h3 class="mb-3">Resumo da Rodada <span id="phase7-round"></span></h3>
+
+          <!-- Parâmetros efetivos -->
+          <div class="sector-summary mb-3" id="phase7-params"></div>
+
+          <!-- Resultados -->
+          <hr class="divider">
+          <div class="metrics-grid mt-3" id="phase7-results"></div>
+
+          <!-- Penalidade (se houver) -->
+          <div id="phase7-penalty" style="display:none" class="deficit-warning mt-3"></div>
+
+          <!-- IS check -->
+          <div class="is-verify mt-3" id="phase7-is"></div>
+
+          <!-- Insights -->
+          <ul class="insight-list mt-3" id="phase7-insights"></ul>
+        </div>
+
+        <!-- Botao para avançar -->
+        <button class="btn btn-primary" id="btn-advance" onclick="advanceGame()">
+          <i class="ti ti-arrow-right"></i>
+          <span id="btn-advance-label">Avancar para Rodada 2</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- ════════════════════════════════════════════════════════
+         VIEW: Resultado Final (apos rodada 3)
+         ════════════════════════════════════════════════════════ -->
+    <div id="view-final" class="view">
+      <div class="page-header">
+        <h2>Resultado Final</h2>
+        <p class="mt-2">Comparativo das 3 rodadas</p>
+      </div>
+
+      <!-- Grafico de barras -->
+      <div class="card mb-4">
+        <h4 class="mb-2">Evolucao do PIB</h4>
+        <div class="bar-chart" id="final-bar-chart"></div>
+      </div>
+
+      <!-- Tabela comparativa -->
+      <div class="card mb-4">
+        <h4 class="mb-3">Detalhes por rodada</h4>
+        <div id="final-rounds-table"></div>
+      </div>
+
+      <!-- Destaques -->
+      <div class="card mb-4">
+        <h4 class="mb-3">Destaques</h4>
+        <ul class="insight-list" id="final-insights"></ul>
+      </div>
+
+      <!-- Verificacao IS -->
+      <div class="card mb-4">
+        <h4 class="mb-3">Relacao IS por rodada</h4>
+        <div id="final-is-checks"></div>
+      </div>
+
+      <button class="btn btn-danger" onclick="requestEndGame()">
+        <i class="ti ti-power"></i> Encerrar sala
+      </button>
+    </div>
+
+    <!-- ════════════════════════════════════════════════════════
+         VIEW: Sala encerrada
+         ════════════════════════════════════════════════════════ -->
+    <div id="view-closed" class="view">
+      <div style="text-align:center;padding:4rem 0">
+        <i class="ti ti-circle-check" style="font-size:3rem;color:var(--green)"></i>
+        <h2 class="mt-4">Sala encerrada</h2>
+        <p class="mt-2">O jogo foi encerrado com sucesso. Obrigado!</p>
+        <a href="index.html" class="btn btn-secondary btn-inline mt-6">
+          <i class="ti ti-home"></i> Voltar ao inicio
+        </a>
+      </div>
+    </div>
+
+  </div><!-- /container -->
+</div><!-- /page -->
+
+<!-- Confirmação: fechar rodada -->
+<div class="confirm-overlay" id="confirm-close">
+  <div class="confirm-box">
+    <div class="confirm-title">Fechar rodada?</div>
+    <div class="confirm-desc" id="confirm-close-desc">
+      Jogadores que nao enviaram usarao os valores padrao. Esta acao nao pode ser desfeita.
+    </div>
+    <div class="confirm-actions">
+      <button class="btn btn-secondary" onclick="hideConfirm('confirm-close')">Cancelar</button>
+      <button class="btn btn-danger" onclick="closeRoundConfirmed()">Fechar rodada</button>
+    </div>
+  </div>
+</div>
+
+<!-- Confirmação: encerrar sala -->
+<div class="confirm-overlay" id="confirm-end">
+  <div class="confirm-box">
+    <div class="confirm-title">Encerrar a sala?</div>
+    <div class="confirm-desc">
+      Isso impedira qualquer nova acao na sala. Use apos a aula.
+    </div>
+    <div class="confirm-actions">
+      <button class="btn btn-secondary" onclick="hideConfirm('confirm-end')">Cancelar</button>
+      <button class="btn btn-danger" onclick="endGameConfirmed()">Encerrar</button>
+    </div>
+  </div>
+</div>
+
+<!-- Indicador de conexão -->
+<div class="conn-indicator" id="conn-indicator">
+  <div class="conn-dot" id="conn-dot"></div>
+  <span id="conn-label">Conectando...</span>
+</div>
+
+<!-- Firebase SDK -->
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+<script src="js/firebase-config.js"></script>
+<script src="js/db.js"></script>
+<script src="js/game-engine.js"></script>
+<script src="js/master-app.js"></script>
+</body>
+</html>
