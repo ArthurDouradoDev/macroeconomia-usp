@@ -17,6 +17,11 @@ const ROUND_EVENTS = {
       I:  { min: 10, max: 200 },
       G:  { min: 20, max: 200 },
       T:  { min: 20, max: 200 }
+    },
+    // Config de pontuação (valores tunaveis, calibrados pela faixa real de Y)
+    scoring: {
+      targetY: 850, targetBand: 250, collectiveBonus: 30,
+      refY: 1000, refConsumption: 700, refDeficit: 80
     }
   },
   2: {
@@ -30,6 +35,10 @@ const ROUND_EVENTS = {
       I:  { min: 10, max: 120 },  // reduzido pela crise
       G:  { min: 20, max: 200 },
       T:  { min: 20, max: 200 }
+    },
+    scoring: {
+      targetY: 700, targetBand: 250, collectiveBonus: 30,
+      refY: 850, refConsumption: 600, refDeficit: 80
     }
   },
   3: {
@@ -43,7 +52,32 @@ const ROUND_EVENTS = {
       I:  { min: 10, max: 200 },  // restaurado (mas limitado pela poupança anterior)
       G:  { min: 20, max: 200 },
       T:  { min: 20, max: 200 }
+    },
+    scoring: {
+      targetY: 900, targetBand: 250, collectiveBonus: 30,
+      refY: 1050, refConsumption: 750, refDeficit: 60
     }
+  }
+};
+
+// Missões de cada setor (mostradas ao jogador na tela de submissão).
+// Cada setor pontua por cumprir seu objetivo proprio. Os objetivos sao
+// parcialmente conflitantes de proposito: e a licao central de macro.
+const SECTOR_MISSIONS = {
+  familias: {
+    title: 'Missao: Bem-estar',
+    objective: 'Maximizar o consumo das familias.',
+    tip: 'Consumir mais aquece a economia, mas gastar alem da renda (poupanca privada negativa) zera o seu esforco.'
+  },
+  empresas: {
+    title: 'Missao: Crescimento',
+    objective: 'Manter a economia aquecida (PIB alto) investindo com ousadia.',
+    tip: 'Quanto maior o PIB, melhor. Investir perto do limite rende bônus, mas depender de uma economia descapitalizada penaliza.'
+  },
+  governo: {
+    title: 'Missao: Equilibrio',
+    objective: 'Estimular o PIB com responsabilidade fiscal.',
+    tip: 'PIB alto pontua, mas deficit alto (G muito acima de T) derruba a sua nota. Estimule sem estourar o orcamento.'
   }
 };
 
@@ -58,6 +92,11 @@ const DEFAULTS = {
 
 function clamp(value, min, max) {
   return Math.min(Math.max(Number(value), min), max);
+}
+
+// Limita um valor ao intervalo [0, 1]
+function clamp01(value) {
+  return clamp(value, 0, 1);
 }
 
 function round2(n) {
@@ -221,6 +260,110 @@ function aggregateSectorValues(submissions, players, sector) {
   return null;
 }
 
+// ── Pontuação por setor (gamificação) ─────────────────────────
+
+/**
+ * Calcula a pontuação de cada setor na rodada. Função pura.
+ * Modelo hibrido: cada setor pontua por cumprir sua missao (0 a 100) e,
+ * se o PIB atingir a meta da rodada, todos ganham um bonus coletivo.
+ *
+ * @param {object} result - resultado de calculateEquilibrium + parametros efetivos
+ * @param {object} limits - limites da rodada (de getRoundLimits)
+ * @param {number} round  - numero da rodada (1..3)
+ * @returns {object} { familias, empresas, governo, collectiveBonus, targetHit, targetY, breakdown }
+ */
+function computeSectorScores(result, limits, round) {
+  const cfg = ROUND_EVENTS[round].scoring;
+  const { Y, consumption, privateSavings, IEff, deficit } = result;
+
+  // Familias: maximizar consumo, penalizado se a poupanca privada ficou negativa
+  let familiasBase = clamp01(consumption / cfg.refConsumption) * 100;
+  const familiasOverLeveraged = privateSavings < 0;
+  if (familiasOverLeveraged) familiasBase *= 0.6;
+  const familiasScore = Math.round(clamp(familiasBase, 0, 100));
+
+  // Empresas: PIB alto (base) + ousadia de investimento, penalizado se descapitalizada
+  const iMax = limits?.I?.max || 200;
+  const boldness = clamp01(IEff / iMax);
+  let empresasBase = clamp01(Y / cfg.refY) * 85 + boldness * 15;
+  const undercapitalized = !!limits?.I?.undercapitalized;
+  if (undercapitalized) empresasBase *= 0.7;
+  const empresasScore = Math.round(clamp(empresasBase, 0, 100));
+
+  // Governo: PIB alto, penalizado pelo deficit (e pela penalidade fiscal aplicada)
+  const deficitDrag = clamp01(Math.max(0, deficit) / cfg.refDeficit);
+  let governoBase = clamp01(Y / cfg.refY) * 100 * (1 - 0.5 * deficitDrag);
+  if (result.penaltyInfo?.penaltyApplied) governoBase -= 20;
+  const governoScore = Math.round(clamp(governoBase, 0, 100));
+
+  // Bonus coletivo: PIB dentro da banda da meta
+  const targetHit = Math.abs(Y - cfg.targetY) <= cfg.targetBand;
+  const collectiveBonus = targetHit ? cfg.collectiveBonus : 0;
+
+  return {
+    familias: familiasScore + collectiveBonus,
+    empresas: empresasScore + collectiveBonus,
+    governo:  governoScore + collectiveBonus,
+    collectiveBonus,
+    targetHit,
+    targetY: cfg.targetY,
+    breakdown: {
+      familias: { base: familiasScore, overLeveraged: familiasOverLeveraged },
+      empresas: { base: empresasScore, boldness: round2(boldness), undercapitalized },
+      governo:  { base: governoScore, deficitDrag: round2(deficitDrag), penalty: !!result.penaltyInfo?.penaltyApplied }
+    }
+  };
+}
+
+// Soma os scores de todas as rodadas e devolve um ranking ordenado. Função pura.
+// allResults: { round_1: {...,scores}, round_2: {...}, ... } ou { 1: {...}, 2: {...} }
+function computeLeaderboard(allResults) {
+  const sectors = ['familias', 'empresas', 'governo'];
+  const totals = { familias: 0, empresas: 0, governo: 0 };
+  const perRound = { familias: {}, empresas: {}, governo: {} };
+
+  for (const key of Object.keys(allResults || {})) {
+    const res = allResults[key];
+    if (!res || !res.scores) continue;
+    const n = parseInt(String(key).replace('round_', ''));
+    for (const s of sectors) {
+      const pts = Number(res.scores[s]) || 0;
+      totals[s] += pts;
+      perRound[s][n] = pts;
+    }
+  }
+
+  const ranking = sectors
+    .map(s => ({ sector: s, total: totals[s], perRound: perRound[s] }))
+    .sort((a, b) => b.total - a.total);
+
+  // Atribuir posicao (empates compartilham a mesma posicao)
+  ranking.forEach((row, i) => {
+    row.rank = (i > 0 && row.total === ranking[i - 1].total)
+      ? ranking[i - 1].rank
+      : i + 1;
+  });
+
+  return ranking;
+}
+
+// ── Duração configurável ──────────────────────────────────────
+
+/**
+ * Deriva os tempos de cada parte a partir da duração total escolhida.
+ * Função pura. totalMinutes entre 10 e 20.
+ * @returns {object} { totalMinutes, submissionSeconds, revealSeconds }
+ */
+function computeDurations(totalMinutes) {
+  const tm = clamp(Math.round(Number(totalMinutes) || 15), 10, 20);
+  const totalSec = tm * 60;
+  // Reserva fixa: ~60s de intro (lobby->rodada) e ~90s para o resultado final
+  const perRound = (totalSec - 150) / 3;
+  const submissionSeconds = clamp(Math.round(perRound * 0.68), 60, 300);
+  const revealSeconds     = clamp(Math.round(perRound * 0.32), 30, 150);
+  return { totalMinutes: tm, submissionSeconds, revealSeconds };
+}
+
 // ── Cálculo completo da rodada ────────────────────────────────
 
 // Compila todos os valores, aplica penalidades e retorna resultado completo
@@ -246,7 +389,8 @@ function computeRoundResult(submissions, players, round, prevResult) {
     c0: c0Eff, c1: c1Raw, I: IEff, G: GEff, T: TEff
   });
 
-  return {
+  // Montar resultado base (necessario para a pontuação)
+  const base = {
     ...equilibrium,
     // Parâmetros efetivos usados no cálculo
     c0Eff, c1Eff: c1Raw, IEff, GEff, TEff,
@@ -262,6 +406,13 @@ function computeRoundResult(submissions, players, round, prevResult) {
     round,
     eventName: ROUND_EVENTS[round].name
   };
+
+  // Pontuação dos setores (gamificação) — persistida junto do resultado
+  const scoring = computeSectorScores(base, limits, round);
+  base.scores = { familias: scoring.familias, empresas: scoring.empresas, governo: scoring.governo };
+  base.scoring = scoring;
+
+  return base;
 }
 
 // ── Insights textuais ─────────────────────────────────────────

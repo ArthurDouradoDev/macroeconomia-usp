@@ -52,7 +52,9 @@ async function createRoom(roomCode, masterKey) {
       currentRound: 0,
       createdAt: firebase.database.ServerValue.TIMESTAMP,
       masterKey,
-      event: null
+      event: null,
+      totalMinutes: 15,   // duração total padrão (ajustavel no lobby)
+      roundEndsAt: null    // timestamp absoluto (ms) do fim da submissao da rodada
     }
   });
 }
@@ -68,6 +70,20 @@ async function updateRoomStatus(roomCode, status, currentRound) {
   const update = { status };
   if (currentRound !== undefined) update.currentRound = currentRound;
   await _configRef(roomCode).update(update);
+}
+
+// Atualiza a duração total escolhida pelo mestre (em minutos)
+async function updateRoomDuration(roomCode, totalMinutes) {
+  await _configRef(roomCode).update({ totalMinutes });
+}
+
+// Inicia uma rodada: grava status, rodada atual e o instante de fim da submissao
+async function startRoundAt(roomCode, round, endsAt) {
+  await _configRef(roomCode).update({
+    status: `round_${round}`,
+    currentRound: round,
+    roundEndsAt: endsAt
+  });
 }
 
 // Encerra a sala

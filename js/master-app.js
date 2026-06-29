@@ -15,6 +15,9 @@ let _allResults    = {};      // resultados de todas as rodadas
 let _animPhase     = 0;
 let _animTimers    = [];
 let _manualMode    = true;    // padrão: avançar fases manualmente
+let _autoClosed    = false;   // guard para o auto-encerramento da rodada
+let _revealSeconds = 80;      // tempo de revelação derivado da duração total
+const _PHASE_COUNT = 8;       // fases da animação de revelação
 
 // ── Utilitários de UI ─────────────────────────────────────────
 
@@ -171,6 +174,7 @@ function routeView(config) {
     showView('view-lobby');
     document.getElementById('lobby-room-code').textContent = _roomCode;
     document.getElementById('lobby-code-big').textContent  = _roomCode;
+    initDurationSlider(config.totalMinutes);
     updateLobbyView();
 
   } else if (status === 'round_1' || status === 'round_2' || status === 'round_3') {
@@ -243,6 +247,49 @@ function sectorName(s) {
   return s === 'familias' ? 'Familias' : s === 'empresas' ? 'Empresas' : 'Governo';
 }
 
+function sectorColor(s) {
+  return s === 'familias' ? 'green' : s === 'empresas' ? 'blue' : 'gold';
+}
+
+function sectorIcon(s) {
+  return s === 'familias' ? 'ti-home' : s === 'empresas' ? 'ti-building-factory' : 'ti-building-bank';
+}
+
+// ── Duração da dinâmica ───────────────────────────────────────
+
+// Inicializa o slider de duração com o valor salvo na sala
+function initDurationSlider(totalMinutes) {
+  const slider = document.getElementById('slider-duration');
+  if (!slider) return;
+  const tm = clamp(Number(totalMinutes) || 15, 10, 20);
+  slider.value = tm;
+  renderDurationDisplay(tm);
+}
+
+// Reage ao arraste do slider: atualiza display e grava no Firebase
+function onDurationInput(value) {
+  const tm = clamp(Number(value) || 15, 10, 20);
+  renderDurationDisplay(tm);
+  updateRoomDuration(_roomCode, tm).catch(err => console.error(err));
+}
+
+function renderDurationDisplay(totalMinutes) {
+  const { submissionSeconds, revealSeconds } = computeDurations(totalMinutes);
+  const valEl = document.getElementById('val-duration');
+  if (valEl) valEl.textContent = `${totalMinutes} min`;
+  const brk = document.getElementById('duration-breakdown');
+  if (brk) {
+    brk.innerHTML = `Por rodada: submissao <strong class="mono">${fmtClock(submissionSeconds)}</strong> | revelacao <strong class="mono">${fmtClock(revealSeconds)}</strong>.`;
+  }
+}
+
+// Formata segundos como m:ss
+function fmtClock(totalSeconds) {
+  const s = Math.max(0, Math.round(totalSeconds));
+  const m = Math.floor(s / 60);
+  return `${m}:${(s % 60).toString().padStart(2, '0')}`;
+}
+
 function esc(str) {
   return String(str)
     .replace(/&/g, '&amp;')
@@ -257,7 +304,9 @@ async function startRound(round) {
   const btn = document.getElementById('btn-start-round');
   setLoading(btn, true);
   try {
-    await updateRoomStatus(_roomCode, `round_${round}`, round);
+    const { submissionSeconds } = computeDurations(_config?.totalMinutes || 15);
+    const endsAt = Date.now() + submissionSeconds * 1000;
+    await startRoundAt(_roomCode, round, endsAt);
   } catch (err) {
     console.error(err);
   } finally {
@@ -284,17 +333,32 @@ function setupRoundView(round) {
 
 function startTimer() {
   if (_timerInterval) clearInterval(_timerInterval);
-  let seconds = 180;
+  _autoClosed = false;
+
+  // Conta regressivamente ate o instante de fim sincronizado (config.roundEndsAt).
+  // Fallback: se nao houver roundEndsAt, deriva da duracao total a partir de agora.
+  let endsAt = _config?.roundEndsAt;
+  if (!endsAt) {
+    const { submissionSeconds } = computeDurations(_config?.totalMinutes || 15);
+    endsAt = Date.now() + submissionSeconds * 1000;
+  }
 
   function tick() {
-    const m  = Math.floor(seconds / 60);
-    const s  = seconds % 60;
     const el = document.getElementById('timer-display');
     if (!el) return;
+    const seconds = Math.max(0, Math.round((endsAt - Date.now()) / 1000));
+    const m = Math.floor(seconds / 60);
+    const s = seconds % 60;
     el.textContent = `${m}:${s.toString().padStart(2, '0')}`;
-    el.className   = 'timer-value' + (seconds <= 30 ? ' urgent' : seconds <= 60 ? ' warning' : '');
-    if (seconds <= 0) { clearInterval(_timerInterval); return; }
-    seconds--;
+    el.className   = 'timer-value' + (seconds <= 10 ? ' urgent' : seconds <= 30 ? ' warning' : '');
+    if (seconds <= 0) {
+      clearInterval(_timerInterval);
+      if (!_autoClosed) {
+        _autoClosed = true;
+        // Encerra a rodada automaticamente (mestre ja pode ter fechado antes)
+        closeRoundConfirmed();
+      }
+    }
   }
 
   tick();
@@ -377,20 +441,21 @@ function activateRevealPhase(n) {
   _animPhase = n;
   document.querySelectorAll('.calc-phase').forEach(el => el.classList.remove('active'));
   document.getElementById(`phase-${n}`).classList.add('active');
-  for (let i = 1; i <= 7; i++) {
+  for (let i = 1; i <= _PHASE_COUNT; i++) {
     const dot = document.getElementById(`pdot-${i}`);
     if (!dot) continue;
     dot.className = 'phase-dot ' + (i < n ? 'done' : i === n ? 'current' : '');
   }
   if (n === 6) runCountUp(_currentResult.Y);
+  if (n === 7) animateLeaderboard();
 
-  // Em modo manual: mostrar "Próximo" nas fases 1-6, ocultar na fase 7
+  // Em modo manual: mostrar "Próximo" nas fases intermediárias, ocultar na última
   const nextBtn = document.getElementById('btn-next-phase');
-  if (nextBtn) nextBtn.style.display = (_manualMode && n < 7) ? '' : 'none';
+  if (nextBtn) nextBtn.style.display = (_manualMode && n < _PHASE_COUNT) ? '' : 'none';
 }
 
 function manualNextPhase() {
-  if (_animPhase < 7) activateRevealPhase(_animPhase + 1);
+  if (_animPhase < _PHASE_COUNT) activateRevealPhase(_animPhase + 1);
 }
 
 function toggleRevealMode() {
@@ -404,13 +469,13 @@ function toggleRevealMode() {
     // Cancelar timers automáticos restantes
     _animTimers.forEach(t => clearTimeout(t));
     _animTimers = [];
-    if (nextBtn) nextBtn.style.display = _animPhase < 7 ? '' : 'none';
+    if (nextBtn) nextBtn.style.display = _animPhase < _PHASE_COUNT ? '' : 'none';
   } else {
     modeBtn.innerHTML = '<i class="ti ti-player-play"></i> Auto';
     modeBtn.className = 'btn btn-gold btn-sm btn-inline';
     if (nextBtn) nextBtn.style.display = 'none';
     // Disparar timers para as fases restantes a partir da atual
-    const durations = [5000, 5000, 10000, 5000, 5000, 5000, 0];
+    const durations = getPhaseDurations();
     let elapsed = 0;
     for (let i = _animPhase; i < durations.length - 1; i++) {
       elapsed += durations[i];
@@ -419,6 +484,17 @@ function toggleRevealMode() {
       _animTimers.push(t);
     }
   }
+}
+
+// Durações de cada fase (ms) escaladas para o tempo de revelação derivado da
+// duração total. Pesos relativos das fases 1..7 (fase 8 é o resumo, manual).
+function getPhaseDurations() {
+  const weights = [5, 5, 10, 5, 5, 5, 8]; // fases 1..7
+  const total   = weights.reduce((a, b) => a + b, 0);
+  const targetMs = (_revealSeconds || total) * 1000;
+  const scaled = weights.map(w => Math.round(targetMs * w / total));
+  scaled.push(0); // fase 8 permanece visível
+  return scaled;
 }
 
 function startRevealAnimation(round, result) {
@@ -437,9 +513,12 @@ function startRevealAnimation(round, result) {
     modeBtn.className = 'btn btn-secondary btn-sm btn-inline';
   }
 
+  // Tempo de revelação derivado da duração total escolhida
+  _revealSeconds = computeDurations(_config?.totalMinutes || 15).revealSeconds;
+
   // Construir barra de progresso
   const prog = document.getElementById('phase-progress');
-  prog.innerHTML = Array.from({ length: 7 }, (_, i) =>
+  prog.innerHTML = Array.from({ length: _PHASE_COUNT }, (_, i) =>
     `<div class="phase-dot" id="pdot-${i + 1}"></div>`
   ).join('');
 
@@ -451,6 +530,7 @@ function startRevealAnimation(round, result) {
   fillPhase4(result);
   fillPhase5(result);
   fillPhase6(result);
+  fillScorePhase(result, round);
   fillPhase7(result, prevResult, round);
 
   activateRevealPhase(1);
@@ -462,8 +542,9 @@ function skipToResult() {
   _animTimers = [];
   const round = _config?.currentRound;
   const prevResult = _allResults[`round_${round - 1}`] || null;
+  fillScorePhase(_currentResult, round);
   fillPhase7(_currentResult, prevResult, round);
-  activateRevealPhase(7);
+  activateRevealPhase(_PHASE_COUNT);
 }
 
 // Fase 1: valores de cada setor
@@ -603,6 +684,89 @@ function fillPhase6(result) {
   `;
 }
 
+// ── Fase de pontuação (gamificação) ───────────────────────────
+
+// Monta as linhas de um ranking. Reusado no telão (revelação e final).
+function renderLeaderboardRows(ranking) {
+  const maxTotal = Math.max(1, ...ranking.map(r => r.total));
+  return ranking.map(row => {
+    const pct = Math.round((row.total / maxTotal) * 100);
+    const isLeader = row.rank === 1 && row.total > 0;
+    return `
+      <div class="lb-row">
+        <div class="lb-rank ${isLeader ? 'leader' : ''}">${row.rank}</div>
+        <div class="lb-info">
+          <div class="lb-name">
+            <i class="ti ${sectorIcon(row.sector)} text-${sectorColor(row.sector)}"></i>
+            ${sectorName(row.sector)}
+            ${isLeader ? '<i class="ti ti-trophy text-gold"></i>' : ''}
+          </div>
+          <div class="lb-track">
+            <div class="lb-bar ${row.sector}" data-pct="${pct}" style="width:0%"></div>
+          </div>
+        </div>
+        <div class="lb-total mono">${row.total}</div>
+      </div>`;
+  }).join('');
+}
+
+// Anima as barras do ranking (largura de 0 ate o alvo)
+function animateLeaderboard(containerId = 'score-leaderboard') {
+  const bars = document.querySelectorAll(`#${containerId} .lb-bar`);
+  requestAnimationFrame(() => {
+    bars.forEach(bar => { bar.style.width = (bar.dataset.pct || 0) + '%'; });
+  });
+}
+
+// Preenche a fase de pontuação: meta, pontos do setor e ranking acumulado
+function fillScorePhase(result, round) {
+  const sc = result.scoring || {};
+
+  // Meta de PIB / bônus coletivo
+  const targetEl = document.getElementById('score-target');
+  if (sc.targetHit) {
+    targetEl.innerHTML = `
+      <div class="target-banner hit">
+        <i class="ti ti-target-arrow"></i>
+        <div>
+          <div class="fw-700 text-green">Meta de PIB atingida!</div>
+          <div class="text-sm">PIB de ${fmtBI(result.Y)} dentro da meta. Todos os setores ganham +${sc.collectiveBonus} pontos.</div>
+        </div>
+      </div>`;
+  } else {
+    targetEl.innerHTML = `
+      <div class="target-banner miss">
+        <i class="ti ti-target"></i>
+        <div>
+          <div class="fw-700">Meta de PIB: ${fmtBI(sc.targetY)}</div>
+          <div class="text-sm text-muted">PIB foi ${fmtBI(result.Y)}. Sem bonus coletivo nesta rodada.</div>
+        </div>
+      </div>`;
+  }
+
+  // Pontos de cada setor nesta rodada
+  const sectorsEl = document.getElementById('score-sectors');
+  const sectors = ['familias', 'empresas', 'governo'];
+  sectorsEl.innerHTML = sectors.map(s => {
+    const pts = sc[s] ?? 0;
+    const base = sc.breakdown?.[s]?.base ?? pts;
+    const bonusNote = sc.collectiveBonus ? ` <span class="text-green text-sm">(+${sc.collectiveBonus} meta)</span>` : '';
+    return `
+      <div class="score-sector-row">
+        <span class="lb-name">
+          <i class="ti ${sectorIcon(s)} text-${sectorColor(s)}"></i>
+          ${sectorName(s)}
+        </span>
+        <span class="score-pop mono text-${sectorColor(s)}">+${pts}</span>
+      </div>
+      <div class="text-sm text-muted score-sector-note">${base} pela missao${bonusNote}</div>`;
+  }).join('');
+
+  // Ranking acumulado
+  const lb = computeLeaderboard(_allResults);
+  document.getElementById('score-leaderboard').innerHTML = renderLeaderboardRows(lb);
+}
+
 // Fase 7: painel resumo (permanece visível)
 function fillPhase7(result, prevResult, round) {
   // Parâmetros
@@ -703,7 +867,9 @@ async function advanceGame() {
 
   try {
     if (round < 3) {
-      await updateRoomStatus(_roomCode, `round_${round + 1}`, round + 1);
+      const { submissionSeconds } = computeDurations(_config?.totalMinutes || 15);
+      const endsAt = Date.now() + submissionSeconds * 1000;
+      await startRoundAt(_roomCode, round + 1, endsAt);
     } else {
       await updateRoomStatus(_roomCode, 'results', 3);
     }
@@ -719,6 +885,21 @@ async function advanceGame() {
 async function showFinalResults(results) {
   _allResults = results;
   showView('view-final');
+
+  // Ranking final dos setores
+  const leaderboard = computeLeaderboard(results);
+  document.getElementById('final-leaderboard').innerHTML = renderLeaderboardRows(leaderboard);
+  animateLeaderboard('final-leaderboard');
+
+  const winners = leaderboard.filter(r => r.rank === 1 && r.total > 0);
+  const winnerEl = document.getElementById('final-winner');
+  if (winners.length === 1) {
+    winnerEl.innerHTML = `<i class="ti ti-trophy text-gold"></i> Setor vencedor: <strong class="text-${sectorColor(winners[0].sector)}">${sectorName(winners[0].sector)}</strong> com ${winners[0].total} pontos.`;
+  } else if (winners.length > 1) {
+    winnerEl.innerHTML = `<i class="ti ti-trophy text-gold"></i> Empate na lideranca: ${winners.map(w => sectorName(w.sector)).join(', ')} com ${winners[0].total} pontos.`;
+  } else {
+    winnerEl.innerHTML = '';
+  }
 
   const rounds   = [1, 2, 3].filter(r => results[r]);
   const yValues  = rounds.map(r => results[r].Y);

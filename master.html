@@ -99,6 +99,19 @@
         <div class="player-list" id="player-list"></div>
       </div>
 
+      <!-- Duração total da dinâmica -->
+      <div class="card mb-4">
+        <div class="slider-header">
+          <span class="slider-label">Duracao total da dinamica</span>
+          <span class="slider-value mono text-gold" id="val-duration">15 min</span>
+        </div>
+        <p class="slider-help">Define automaticamente o tempo de submissao e de revelacao de cada rodada.</p>
+        <input type="range" id="slider-duration" min="10" max="20" step="1" value="15"
+          oninput="onDurationInput(this.value)">
+        <div class="slider-limits"><span>10 min</span><span>20 min</span></div>
+        <div class="text-sm text-muted mt-2" id="duration-breakdown"></div>
+      </div>
+
       <div id="lobby-warning" class="error-msg mb-4">
         Cada setor precisa de pelo menos 1 jogador para iniciar.
       </div>
@@ -123,7 +136,7 @@
       <div class="card mb-4">
         <div class="timer-display">
           <div class="timer-value" id="timer-display">3:00</div>
-          <div class="timer-label">Tempo restante (indicativo)</div>
+          <div class="timer-label">Tempo restante (encerra e calcula automaticamente)</div>
         </div>
       </div>
 
@@ -144,7 +157,7 @@
     <div id="view-reveal" class="view">
 
       <!-- Controles de revelacao -->
-      <div class="reveal-controls mb-3">
+      <div class="reveal-controls">
         <button class="btn btn-secondary btn-sm btn-inline" id="btn-toggle-mode" onclick="toggleRevealMode()">
           <i class="ti ti-hand-click"></i> Manual
         </button>
@@ -157,7 +170,10 @@
       </div>
 
       <!-- Progresso das fases -->
-      <div class="phase-progress" id="phase-progress"></div>
+      <div class="phase-progress-wrap">
+        <div class="phase-progress-label">Etapa da revelacao</div>
+        <div class="phase-progress" id="phase-progress"></div>
+      </div>
 
       <!-- Fase 1: Coletando decisoes -->
       <div class="calc-phase" id="phase-1">
@@ -214,8 +230,25 @@
         </div>
       </div>
 
-      <!-- Fase 7: Painel resumo permanente -->
+      <!-- Fase 7: Pontuacao da rodada e ranking -->
       <div class="calc-phase" id="phase-7">
+        <div class="card mb-4">
+          <h3 class="mb-3 text-gold">Pontuacao da rodada</h3>
+
+          <!-- Meta de PIB / bonus coletivo -->
+          <div id="score-target" class="mb-4"></div>
+
+          <!-- Pontos de cada setor nesta rodada -->
+          <div id="score-sectors" class="mb-4"></div>
+
+          <!-- Ranking acumulado -->
+          <h4 class="mb-3">Ranking acumulado</h4>
+          <div id="score-leaderboard" class="leaderboard"></div>
+        </div>
+      </div>
+
+      <!-- Fase 8: Painel resumo permanente -->
+      <div class="calc-phase" id="phase-8">
         <div class="card mb-4">
           <h3 class="mb-3">Resumo da Rodada <span id="phase7-round"></span></h3>
 
@@ -251,6 +284,13 @@
       <div class="page-header">
         <h2>Resultado Final</h2>
         <p class="mt-2">Comparativo das 3 rodadas</p>
+      </div>
+
+      <!-- Ranking final dos setores -->
+      <div class="card mb-4">
+        <h4 class="mb-3">Classificacao final dos setores</h4>
+        <div id="final-winner" class="winner-banner mb-3"></div>
+        <div id="final-leaderboard" class="leaderboard"></div>
       </div>
 
       <!-- Grafico de barras -->

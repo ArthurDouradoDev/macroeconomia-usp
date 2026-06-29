@@ -186,6 +186,44 @@ Essa função DEVE ser pura (sem efeitos colaterais, sem acesso a DOM ou Firebas
 
 ---
 
+## 5b. Pontuação e Missões (gamificação)
+
+Modelo híbrido: cada setor pontua por cumprir sua **missão** (0 a 100) e, se o PIB da rodada atingir a **meta**, os três setores ganham um **bônus coletivo**. Os pontos das 3 rodadas se acumulam num **ranking**. Toda a lógica é pura em `game-engine.js` (`computeSectorScores`, `computeLeaderboard`).
+
+### Missões (`SECTOR_MISSIONS`)
+- **Famílias (Bem-estar):** maximizar o consumo, sem se endividar. Pontuação = `clamp01(consumo / refConsumption) * 100`, multiplicada por 0.6 se a poupança privada ficar negativa.
+- **Empresas (Crescimento):** PIB alto investindo com ousadia. Pontuação = `clamp01(Y / refY) * 85 + clamp01(I / I_max) * 15`, multiplicada por 0.7 se a economia estiver descapitalizada (poupança anterior < 10).
+- **Governo (Equilíbrio):** PIB alto com déficit baixo. Pontuação = `clamp01(Y / refY) * 100 * (1 - 0.5 * clamp01(max(0, déficit) / refDeficit))`, menos 20 fixos se a penalidade fiscal foi aplicada.
+
+### Bônus coletivo
+`targetHit = |Y - targetY| <= targetBand`. Se verdadeiro, soma `collectiveBonus` (30) aos três setores.
+
+### Constantes por rodada (em `ROUND_EVENTS[n].scoring`, tunáveis)
+| Rodada | targetY | targetBand | refY | refConsumption | refDeficit |
+|--------|---------|-----------|------|----------------|-----------|
+| 1 | 850 | 250 | 1000 | 700 | 80 |
+| 2 | 700 | 250 | 850 | 600 | 80 |
+| 3 | 900 | 250 | 1050 | 750 | 60 |
+
+Os scores (`{ familias, empresas, governo }`) são gravados junto do resultado da rodada em `results/round_n/scores`. O ranking acumulado é derivado dos resultados, sem storage adicional.
+
+---
+
+## 5c. Duração configurável
+
+O mestre define a duração total (10 a 20 min) por um slider no lobby (`config.totalMinutes`). A função pura `computeDurations(totalMinutes)` deriva os tempos de cada parte:
+
+```
+totalSec = totalMinutes * 60
+perRound = (totalSec - 150) / 3        // reserva ~60s de intro e ~90s para o resultado final
+submissionSeconds = clamp(round(perRound * 0.68), 60, 300)
+revealSeconds     = clamp(round(perRound * 0.32), 30, 150)
+```
+
+Ao iniciar uma rodada, o mestre grava `config.roundEndsAt = Date.now() + submissionSeconds * 1000`. Mestre e jogadores contam regressivamente até esse instante (sincronizado). Ao zerar, a rodada **encerra automaticamente** (o mestre ainda pode fechar antes). As durações das fases da animação de revelação são escaladas proporcionalmente a `revealSeconds`.
+
+---
+
 ## 6. Interface do Jogador (player.html)
 
 ### 6.1 Tela de seleção de setor

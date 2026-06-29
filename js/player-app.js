@@ -16,6 +16,7 @@ let _lastSubmission = null; // última submissão enviada
 let _offConfig   = null;
 let _offPlayers  = null;
 let _offResult   = null;
+let _playerTimerInterval = null;  // cronômetro sincronizado da submissão
 
 // ── Utilitários de UI ─────────────────────────────────────────
 
@@ -44,6 +45,46 @@ function esc(s) {
     .replace(/&/g,'&amp;')
     .replace(/</g,'&lt;')
     .replace(/>/g,'&gt;');
+}
+
+const SECTOR_LABELS = { familias: 'Familias', empresas: 'Empresas', governo: 'Governo' };
+
+function sectorColor(s) {
+  return s === 'familias' ? 'green' : s === 'empresas' ? 'blue' : 'gold';
+}
+
+function sectorIcon(s) {
+  return s === 'familias' ? 'ti-home' : s === 'empresas' ? 'ti-building-factory' : 'ti-building-bank';
+}
+
+function fmtClock(totalSeconds) {
+  const sec = Math.max(0, Math.round(totalSeconds));
+  return `${Math.floor(sec / 60)}:${(sec % 60).toString().padStart(2, '0')}`;
+}
+
+// Monta as linhas de um ranking (igual ao telão, em escala mobile)
+function renderLeaderboardRows(ranking, mySector) {
+  const maxTotal = Math.max(1, ...ranking.map(r => r.total));
+  return ranking.map(row => {
+    const pct = Math.round((row.total / maxTotal) * 100);
+    const isLeader = row.rank === 1 && row.total > 0;
+    const isMine = row.sector === mySector;
+    return `
+      <div class="lb-row ${isMine ? 'mine' : ''}">
+        <div class="lb-rank ${isLeader ? 'leader' : ''}">${row.rank}</div>
+        <div class="lb-info">
+          <div class="lb-name">
+            <i class="ti ${sectorIcon(row.sector)} text-${sectorColor(row.sector)}"></i>
+            ${SECTOR_LABELS[row.sector]}
+            ${isLeader ? '<i class="ti ti-trophy text-gold"></i>' : ''}
+          </div>
+          <div class="lb-track">
+            <div class="lb-bar ${row.sector}" style="width:${pct}%"></div>
+          </div>
+        </div>
+        <div class="lb-total mono">${row.total}</div>
+      </div>`;
+  }).join('');
 }
 
 function setLoading(btn, loading) {
@@ -180,6 +221,7 @@ function routeView(config) {
   }
 
   if (status === `results_${round}`) {
+    stopPlayerTimer();
     // Mostrar resultado desta rodada
     getRoundResult(_roomCode, round).then(result => {
       if (result) {
@@ -324,10 +366,23 @@ function setupSubmitView(round) {
   document.getElementById('submit-event-name').textContent   = event.name;
   document.getElementById('submit-event-desc').textContent   = event.description;
 
+  // Card de missão do setor
+  const mission = SECTOR_MISSIONS[_sector];
+  const card = document.getElementById('mission-card');
+  if (mission && card) {
+    card.className = `mission-card ${_sector}`;
+    document.getElementById('mission-title').textContent     = mission.title;
+    document.getElementById('mission-objective').textContent = mission.objective;
+    document.getElementById('mission-tip').textContent       = mission.tip;
+  }
+
   // Mostrar apenas os sliders do setor do jogador
   ['familias', 'empresas', 'governo'].forEach(s => {
     document.getElementById(`sliders-${s}`).style.display = s === _sector ? '' : 'none';
   });
+
+  // Reabilitar o botão de envio (pode ter sido travado pelo cronômetro)
+  document.getElementById('btn-submit').disabled = false;
 
   // Configurar limites dos sliders
   applyLimitsToSliders(round);
@@ -335,6 +390,47 @@ function setupSubmitView(round) {
   // Atualizar preview de déficit (Governo)
   if (_sector === 'governo') {
     updateDeficitPreview();
+  }
+
+  // Cronômetro sincronizado (mesmo instante de fim do mestre)
+  startPlayerTimer();
+}
+
+// ── Cronômetro sincronizado ───────────────────────────────────
+
+function startPlayerTimer() {
+  if (_playerTimerInterval) clearInterval(_playerTimerInterval);
+  const endsAt = _config?.roundEndsAt;
+  const el  = document.getElementById('player-timer');
+  const val = document.getElementById('player-timer-value');
+  if (!endsAt || !el || !val) { if (el) el.style.display = 'none'; return; }
+  el.style.display = '';
+
+  function tick() {
+    const seconds = Math.max(0, Math.round((endsAt - Date.now()) / 1000));
+    val.textContent = fmtClock(seconds);
+    el.className = 'player-timer' + (seconds <= 10 ? ' urgent' : seconds <= 30 ? ' warning' : '');
+    if (seconds <= 0) {
+      clearInterval(_playerTimerInterval);
+      val.textContent = 'Tempo esgotado';
+      lockSubmitOnTimeout();
+    }
+  }
+  tick();
+  _playerTimerInterval = setInterval(tick, 1000);
+}
+
+function stopPlayerTimer() {
+  if (_playerTimerInterval) { clearInterval(_playerTimerInterval); _playerTimerInterval = null; }
+}
+
+// Ao esgotar o tempo: trava o envio. O mestre calcula com o ultimo valor enviado
+// (ou o padrao se nada foi enviado).
+function lockSubmitOnTimeout() {
+  const btn = document.getElementById('btn-submit');
+  if (btn) {
+    btn.disabled = true;
+    btn.innerHTML = '<i class="ti ti-clock-stop"></i> Tempo esgotado, calculando...';
   }
 }
 
@@ -541,10 +637,36 @@ function goBackToSubmit() {
 
 // ── Resultado da rodada ───────────────────────────────────────
 
+// Renderiza os pontos do setor e a posição atual no ranking
+function renderScoreBlock(result) {
+  const pts = result.scores?.[_sector] ?? 0;
+  document.getElementById('result-score-points').textContent = `+${pts}`;
+
+  const lb = computeLeaderboard(_allResults);
+  const myRow = lb.find(r => r.sector === _sector);
+  const rankEl = document.getElementById('result-score-rank');
+  rankEl.innerHTML = `
+    <div class="rank-num mono">${myRow ? myRow.rank + 'o' : '-'}</div>
+    <div class="text-sm text-muted">lugar</div>`;
+
+  const bonusEl = document.getElementById('result-score-bonus');
+  if (result.scoring?.collectiveBonus) {
+    bonusEl.style.display = '';
+    bonusEl.innerHTML = `<i class="ti ti-target-arrow"></i> Meta de PIB atingida: +${result.scoring.collectiveBonus} de bonus para todos os setores.`;
+  } else {
+    bonusEl.style.display = 'none';
+  }
+
+  document.getElementById('result-leaderboard').innerHTML = renderLeaderboardRows(lb, _sector);
+}
+
 function renderRoundResult(result, round) {
   // PIB
   document.getElementById('result-round-label').textContent = `Rodada ${round} de 3`;
   document.getElementById('result-Y').textContent = fmtNum(result.Y, 0);
+
+  // Pontuação do setor + posição no ranking
+  renderScoreBlock(result);
 
   // Comparação com rodada anterior
   const compEl  = document.getElementById('result-comparison');
@@ -621,6 +743,23 @@ function renderRoundResult(result, round) {
 // ── Resultado final ───────────────────────────────────────────
 
 function renderFinalResults(results) {
+  // Posição final do setor do jogador + ranking completo
+  const lb = computeLeaderboard(results);
+  const myRow = lb.find(r => r.sector === _sector);
+  const posEl = document.getElementById('final-position');
+  if (posEl && myRow) {
+    const won = myRow.rank === 1 && myRow.total > 0;
+    posEl.innerHTML = `
+      <div class="final-position-icon">
+        <i class="ti ${won ? 'ti-trophy text-gold' : 'ti-medal text-blue'}"></i>
+      </div>
+      <div>
+        <div class="text-sm text-muted">Seu setor (${SECTOR_LABELS[_sector]})</div>
+        <div class="fw-700 text-lg">${won ? 'Venceu em 1o lugar!' : `${myRow.rank}o lugar`} com ${myRow.total} pontos</div>
+      </div>`;
+  }
+  document.getElementById('final-leaderboard').innerHTML = renderLeaderboardRows(lb, _sector);
+
   const rounds  = [1, 2, 3].filter(r => results[r]);
   const yValues = rounds.map(r => results[r].Y);
   const maxY    = Math.max(...yValues);

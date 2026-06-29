@@ -53,8 +53,8 @@
             <i class="ti ti-home sector-fallback-icon"></i>
           </div>
           <div>
-            <div class="fw-700 text-lg">Familias</div>
-            <div class="text-sm text-muted">Controla o consumo da economia</div>
+            <div class="sector-card-name text-green">Familias</div>
+            <div class="text-sm text-300">Controla o consumo da economia</div>
           </div>
           <div style="margin-left:auto;display:flex;flex-direction:column;align-items:flex-end;gap:.25rem">
             <div id="count-badge-familias" class="badge badge-green">0</div>
@@ -75,8 +75,8 @@
             <i class="ti ti-building-factory sector-fallback-icon"></i>
           </div>
           <div>
-            <div class="fw-700 text-lg">Empresas</div>
-            <div class="text-sm text-muted">Controla o investimento</div>
+            <div class="sector-card-name text-blue">Empresas</div>
+            <div class="text-sm text-300">Controla o investimento</div>
           </div>
           <div style="margin-left:auto;display:flex;flex-direction:column;align-items:flex-end;gap:.25rem">
             <div id="count-badge-empresas" class="badge badge-blue">0</div>
@@ -96,8 +96,8 @@
             <i class="ti ti-building-bank sector-fallback-icon"></i>
           </div>
           <div>
-            <div class="fw-700 text-lg">Governo</div>
-            <div class="text-sm text-muted">Controla a politica fiscal</div>
+            <div class="sector-card-name text-gold">Governo</div>
+            <div class="text-sm text-300">Controla a politica fiscal</div>
           </div>
           <div style="margin-left:auto;display:flex;flex-direction:column;align-items:flex-end;gap:.25rem">
             <div id="count-badge-governo" class="badge badge-gold">0</div>
@@ -142,6 +142,19 @@
         <div class="round-banner-round" id="submit-round-label"></div>
         <div class="round-banner-event" id="submit-event-name"></div>
         <div class="round-banner-desc" id="submit-event-desc"></div>
+      </div>
+
+      <!-- Cronômetro sincronizado -->
+      <div class="player-timer" id="player-timer">
+        <i class="ti ti-clock"></i>
+        <span class="mono" id="player-timer-value">0:00</span>
+      </div>
+
+      <!-- Card de missão do setor -->
+      <div class="mission-card" id="mission-card">
+        <div class="mission-title" id="mission-title"></div>
+        <div class="mission-objective" id="mission-objective"></div>
+        <div class="mission-tip" id="mission-tip"></div>
       </div>
 
       <!-- Aviso de limite reduzido (rodada 2) -->
@@ -322,6 +335,19 @@
         <div id="result-comparison" class="comparison-row mt-3" style="justify-content:center"></div>
       </div>
 
+      <!-- Sua pontuacao + posicao no ranking -->
+      <div class="card mb-4 score-card" id="result-score-card">
+        <div class="score-card-top">
+          <div>
+            <div class="text-sm text-muted">Pontos do seu setor nesta rodada</div>
+            <div class="score-card-points mono" id="result-score-points">+0</div>
+          </div>
+          <div class="score-card-rank" id="result-score-rank"></div>
+        </div>
+        <div id="result-score-bonus" class="text-sm text-green mt-2" style="display:none"></div>
+        <div class="leaderboard mt-3" id="result-leaderboard"></div>
+      </div>
+
       <!-- Contribuicao do setor -->
       <div class="card mb-4">
         <h4 class="mb-3" id="result-sector-title">Sua contribuicao</h4>
@@ -352,6 +378,12 @@
       <div class="page-header">
         <h2>Resultado Final</h2>
         <p class="mt-2">Voce participou das 3 rodadas!</p>
+      </div>
+
+      <!-- Posicao final do seu setor -->
+      <div class="card mb-4 score-card">
+        <div id="final-position" class="final-position"></div>
+        <div class="leaderboard mt-3" id="final-leaderboard"></div>
       </div>
 
       <!-- Grafico de barras -->

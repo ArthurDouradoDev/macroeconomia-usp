@@ -248,6 +248,58 @@ console.log("Todos os testes do game-engine passaram.");
 
 Se algum `assert` falhar, o motor de cálculo tem um bug que deve ser corrigido antes de continuar.
 
+### Testes das funções de gamificação e duração
+
+```javascript
+// Duração: deriva submissão e revelação dentro dos limites
+[10, 15, 20].forEach(tm => {
+  const d = computeDurations(tm);
+  console.assert(d.submissionSeconds >= 60 && d.submissionSeconds <= 300, `submit ${tm}`);
+  console.assert(d.revealSeconds >= 30 && d.revealSeconds <= 150, `reveal ${tm}`);
+});
+console.assert(computeDurations(5).totalMinutes === 10, "clamp baixo");
+console.assert(computeDurations(99).totalMinutes === 20, "clamp alto");
+
+// Pontuação: jogo moderado e equilibrado atinge a meta
+const players = { a:{sector:"familias"}, b:{sector:"empresas"}, c:{sector:"governo"} };
+const subs = { a:{values:{c0:55,c1:0.78}}, b:{values:{I:90}}, c:{values:{G:110,T:100}} };
+const r = computeRoundResult(subs, players, 1, null);
+console.assert(r.scores && typeof r.scores.familias === "number", "scores presentes");
+console.assert(r.scoring.targetHit === true, "meta atingida com jogo moderado");
+
+// Déficit alto derruba o Governo
+const subsDef = { a:{values:{c0:50,c1:0.7}}, b:{values:{I:80}}, c:{values:{G:200,T:20}} };
+const rDef = computeRoundResult(subsDef, players, 1, null);
+console.assert(rDef.scoring.breakdown.governo.penalty === true, "penalidade fiscal aplicada");
+
+// Ranking acumulado ordena e trata empates
+const lb = computeLeaderboard({ round_1: r, round_2: rDef });
+console.assert(lb.length === 3 && lb[0].rank === 1, "ranking ordenado");
+const tie = computeLeaderboard({ round_1: { scores: { familias: 50, empresas: 50, governo: 10 } } });
+console.assert(tie[0].rank === 1 && tie[1].rank === 1, "empate compartilha posicao");
+console.log("Testes de gamificacao e duracao passaram.");
+```
+
+---
+
+## Cenário 9: Gamificação, ranking e duração
+
+### Passos
+1. No lobby do mestre, ajustar o slider de **duração total** para 10 min e conferir o texto derivado ("submissao ~1:42 | revelacao ~0:48 por rodada").
+2. Iniciar a rodada 1. Confirmar que o cronômetro do mestre e o do celular contam para o **mesmo instante** (diferença de poucos segundos).
+3. No celular, conferir o **card de missão** do setor (objetivo + dica).
+4. Deixar o cronômetro zerar sem fechar manualmente.
+5. Após a revelação, observar a **fase de pontuação** (meta de PIB, pontos por setor, ranking animado).
+6. No celular, conferir o bloco "Sua pontuação" (pontos do setor + posição no ranking).
+7. Repetir nas rodadas 2 e 3 e, no fim, conferir o **pódio/ranking final** no telão e a posição final no celular.
+
+### Esperado
+- O cronômetro **encerra a rodada automaticamente** ao zerar; quem não enviou usa o padrão. O mestre ainda consegue fechar antes.
+- Jogo equilibrado (PIB dentro da meta) gera bônus coletivo de +30 para os três setores.
+- Déficit alto reduz a nota do Governo; consumo além da renda corta a nota das Famílias; economia descapitalizada penaliza as Empresas.
+- O ranking acumulado é consistente entre telão e celular.
+- A duração total real fica próxima do valor escolhido (10 a 20 min).
+
 ---
 
 ## Checklist final antes de considerar o projeto pronto
@@ -260,9 +312,13 @@ Se algum `assert` falhar, o motor de cálculo tem um bug que deve ser corrigido 
 - [ ] Rodada 1: parâmetros sem restrições, cálculo correto (verificar com teste manual).
 - [ ] Rodada 2: limites de c₀ e I reduzidos conforme evento. Penalidade de déficit funciona.
 - [ ] Rodada 3: limites restaurados. I limitado pela poupança da rodada 2. Penalidade mais severa.
-- [ ] Animação de cálculo no mestre executa todas as fases sem erros.
+- [ ] Animação de cálculo no mestre executa todas as fases sem erros (incluindo a fase de pontuação).
+- [ ] Slider de duração no lobby ajusta o tempo derivado de cada rodada.
+- [ ] Cronômetro sincronizado entre mestre e jogadores; encerra a rodada automaticamente ao zerar.
+- [ ] Card de missão aparece no celular; pontos e ranking aparecem no resultado e no final.
+- [ ] Ranking acumulado e pódio final consistentes entre telão e celular.
 - [ ] Tela de resultado final compara as 3 rodadas.
-- [ ] Testes do `game-engine.js` no console passam.
+- [ ] Testes do `game-engine.js` no console passam (cálculo, gamificação e duração).
 - [ ] Funciona em Chrome e Safari mobile.
 - [ ] Nenhum travessão (—) aparece em textos da interface.
 - [ ] Indicador de conexão Firebase visível e funcional.

@@ -74,6 +74,7 @@ p { color: var(--text-300); font-size: 0.9375rem; }
 .text-blue  { color: var(--blue); }
 .text-red   { color: var(--red); }
 .text-muted { color: var(--text-500); }
+.text-300   { color: var(--text-300); }
 .text-sm    { font-size: 0.8125rem; }
 .text-lg    { font-size: 1.125rem; }
 .text-xl    { font-size: 1.5rem; }
@@ -361,6 +362,13 @@ input[type="range"]::-moz-range-thumb {
 .sector-card-icon.governo  { background: rgba(251,191,36,0.12); color: var(--gold); }
 
 .sector-card-params { display: flex; flex-wrap: wrap; gap: 0.375rem; margin-top: 0.5rem; }
+
+/* Nome do setor: destaque na cor do setor para maior contraste */
+.sector-card-name {
+  font-size: 1.25rem;
+  font-weight: 700;
+  line-height: 1.2;
+}
 
 /* ── Separadores e Espaçamentos ─────────────────────────────── */
 .mt-1  { margin-top: 0.25rem; }
@@ -783,10 +791,22 @@ input[type="range"]::-moz-range-thumb {
 .player-item-sector { font-size: 0.75rem; }
 
 /* ── Phase progress (animação mestre) ───────────────────────── */
+.phase-progress-wrap {
+  margin-bottom: 1.5rem;
+}
+
+.phase-progress-label {
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--text-500);
+  margin-bottom: 0.5rem;
+}
+
 .phase-progress {
   display: flex;
   gap: 0.375rem;
-  margin-bottom: 1.25rem;
 }
 
 .phase-dot {
@@ -900,6 +920,9 @@ input[type="range"]::-moz-range-thumb {
   gap: 0.5rem;
   align-items: center;
   flex-wrap: wrap;
+  padding-bottom: 1rem;
+  margin-bottom: 1.25rem;
+  border-bottom: 1px solid var(--border);
 }
 
 /* ── Texto auxiliar do slider ───────────────────────────────── */
@@ -917,6 +940,181 @@ input[type="range"]::-moz-range-thumb {
   object-fit: contain;
   border-radius: 6px;
 }
+
+/* ── Cronômetro do jogador (sincronizado) ───────────────────── */
+.player-timer {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  background: var(--bg-700);
+  border: 1px solid var(--border);
+  border-radius: var(--r-pill);
+  padding: 0.5rem 1rem;
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: var(--green);
+  margin-bottom: 1rem;
+}
+
+.player-timer .mono { font-family: var(--font-mono); }
+.player-timer.warning { color: var(--gold); border-color: var(--gold); }
+.player-timer.urgent  { color: var(--red);  border-color: var(--red); }
+
+/* ── Card de missão do setor ────────────────────────────────── */
+.mission-card {
+  border: 1px solid var(--border);
+  border-left: 4px solid var(--green);
+  background: var(--bg-700);
+  border-radius: var(--r-card);
+  padding: 1rem;
+  margin-bottom: 1.25rem;
+}
+
+.mission-card.familias { border-left-color: var(--green); }
+.mission-card.empresas { border-left-color: var(--blue); }
+.mission-card.governo  { border-left-color: var(--gold); }
+
+.mission-card.familias .mission-title { color: var(--green); }
+.mission-card.empresas .mission-title { color: var(--blue); }
+.mission-card.governo  .mission-title { color: var(--gold); }
+
+.mission-title { font-weight: 700; font-size: 0.95rem; margin-bottom: 0.25rem; }
+.mission-objective { font-size: 0.9rem; color: var(--text-100); margin-bottom: 0.375rem; }
+.mission-tip { font-size: 0.8125rem; color: var(--text-300); }
+
+/* ── Ranking / leaderboard ──────────────────────────────────── */
+.leaderboard { display: flex; flex-direction: column; gap: 0.5rem; }
+
+.lb-row {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  background: var(--bg-600);
+  border: 1px solid transparent;
+  border-radius: var(--r-input);
+  padding: 0.625rem 0.75rem;
+}
+
+.lb-row.mine { border-color: var(--green); }
+
+.lb-rank {
+  font-family: var(--font-mono);
+  font-weight: 700;
+  font-size: 1.125rem;
+  width: 1.75rem;
+  text-align: center;
+  color: var(--text-300);
+  flex-shrink: 0;
+}
+
+.lb-rank.leader { color: var(--gold); }
+
+.lb-info { flex: 1; min-width: 0; }
+
+.lb-name {
+  display: flex;
+  align-items: center;
+  gap: 0.375rem;
+  font-size: 0.875rem;
+  font-weight: 600;
+  margin-bottom: 0.375rem;
+}
+
+.lb-track {
+  height: 8px;
+  background: var(--bg-500);
+  border-radius: 999px;
+  overflow: hidden;
+}
+
+.lb-bar {
+  height: 100%;
+  border-radius: 999px;
+  transition: width 0.8s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.lb-bar.familias { background: var(--green); }
+.lb-bar.empresas { background: var(--blue); }
+.lb-bar.governo  { background: var(--gold); }
+
+.lb-total {
+  font-family: var(--font-mono);
+  font-weight: 700;
+  font-size: 1.125rem;
+  min-width: 2.5rem;
+  text-align: right;
+}
+
+/* ── Pontuação da rodada (telão) ────────────────────────────── */
+.target-banner {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.875rem 1rem;
+  border-radius: var(--r-input);
+}
+
+.target-banner i { font-size: 1.5rem; flex-shrink: 0; }
+.target-banner.hit  { background: rgba(0,230,118,0.1); border: 1px solid rgba(0,230,118,0.3); }
+.target-banner.hit i { color: var(--green); }
+.target-banner.miss { background: var(--bg-600); border: 1px solid var(--border); }
+.target-banner.miss i { color: var(--text-300); }
+
+.score-sector-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 0.75rem;
+}
+
+.score-sector-note { margin-bottom: 0.25rem; }
+
+.score-pop {
+  font-family: var(--font-mono);
+  font-weight: 700;
+  font-size: 1.5rem;
+  animation: scorePop 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+@keyframes scorePop {
+  from { transform: scale(0.4); opacity: 0; }
+  to   { transform: scale(1);   opacity: 1; }
+}
+
+/* ── Card de pontuação do jogador ───────────────────────────── */
+.score-card-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.score-card-points {
+  font-family: var(--font-mono);
+  font-size: 2.5rem;
+  font-weight: 700;
+  color: var(--green);
+  line-height: 1;
+}
+
+.score-card-rank { text-align: center; }
+.rank-num { font-size: 2rem; font-weight: 700; color: var(--gold); line-height: 1; }
+
+.final-position { display: flex; align-items: center; gap: 1rem; }
+.final-position-icon { font-size: 2.5rem; line-height: 1; }
+
+.winner-banner {
+  font-size: 1rem;
+  font-weight: 600;
+  padding: 0.75rem 1rem;
+  background: var(--bg-600);
+  border-radius: var(--r-input);
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.winner-banner:empty { display: none; }
 
 /* ── Breakpoint: 768px (tela do mestre no telão) ──────────────── */
 /* ============================================================
@@ -948,4 +1146,11 @@ input[type="range"]::-moz-range-thumb {
 
   /* Sector cards side-by-side no lobby */
   .lobby-sectors { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem; }
+
+  /* Ranking maior no telão */
+  .lb-rank, .lb-total { font-size: 1.5rem; }
+  .lb-name { font-size: 1.0625rem; }
+  .lb-track { height: 12px; }
+  .score-pop { font-size: 2rem; }
+  .target-banner i { font-size: 2rem; }
 }
