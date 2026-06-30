@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Jogador | Tres Setores</title>
+  <title>Jogador | Três Setores</title>
   <link rel="stylesheet" href="css/style.css">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css">
 </head>
@@ -30,7 +30,7 @@
         <h2 class="mt-4">Algo deu errado</h2>
         <p class="mt-2" id="error-message">Erro desconhecido.</p>
         <a href="index.html" class="btn btn-secondary btn-inline mt-6">
-          <i class="ti ti-arrow-left"></i> Voltar ao inicio
+          <i class="ti ti-arrow-left"></i> Voltar ao início
         </a>
       </div>
     </div>
@@ -42,7 +42,7 @@
       <div class="page-header">
         <div class="logo-mark">Sala <span id="sector-room-code" class="mono text-green"></span> | <span id="sector-player-name"></span></div>
         <h2>Escolha seu setor</h2>
-        <p class="mt-2">Cada setor controla um parte da economia. Voce pode mudar enquanto o jogo nao iniciou.</p>
+        <p class="mt-2">Cada setor controla uma parte da economia. Você pode mudar enquanto o jogo não iniciou.</p>
       </div>
 
       <!-- Setor Familias -->
@@ -53,7 +53,7 @@
             <i class="ti ti-home sector-fallback-icon"></i>
           </div>
           <div>
-            <div class="sector-card-name text-green">Familias</div>
+            <div class="sector-card-name text-green">Famílias</div>
             <div class="text-sm text-300">Controla o consumo da economia</div>
           </div>
           <div style="margin-left:auto;display:flex;flex-direction:column;align-items:flex-end;gap:.25rem">
@@ -62,8 +62,8 @@
           </div>
         </div>
         <div class="sector-card-params">
-          <span class="badge badge-muted">c&#8321; Propensao a consumir</span>
-          <span class="badge badge-muted">c&#8320; Consumo autonomo</span>
+          <span class="badge badge-muted">c&#8321; Propensão a consumir</span>
+          <span class="badge badge-muted">c&#8320; Consumo autônomo</span>
         </div>
       </button>
 
@@ -97,7 +97,7 @@
           </div>
           <div>
             <div class="sector-card-name text-gold">Governo</div>
-            <div class="text-sm text-300">Controla a politica fiscal</div>
+            <div class="text-sm text-300">Controla a política fiscal</div>
           </div>
           <div style="margin-left:auto;display:flex;flex-direction:column;align-items:flex-end;gap:.25rem">
             <div id="count-badge-governo" class="badge badge-gold">0</div>
@@ -137,161 +137,366 @@
          ════════════════════════════════════════════════════════ -->
     <div id="view-submit" class="view">
 
-      <!-- Banner da rodada -->
-      <div class="round-banner" id="submit-banner">
-        <div class="round-banner-round" id="submit-round-label"></div>
-        <div class="round-banner-event" id="submit-event-name"></div>
-        <div class="round-banner-desc" id="submit-event-desc"></div>
-      </div>
-
-      <!-- Cronômetro sincronizado -->
+      <!-- Cronômetro sincronizado (sempre visível) -->
       <div class="player-timer" id="player-timer">
         <i class="ti ti-clock"></i>
         <span class="mono" id="player-timer-value">0:00</span>
       </div>
 
-      <!-- Card de missão do setor -->
-      <div class="mission-card" id="mission-card">
-        <div class="mission-title" id="mission-title"></div>
-        <div class="mission-objective" id="mission-objective"></div>
-        <div class="mission-tip" id="mission-tip"></div>
-      </div>
+      <!-- ════════ BRIEFING DA RODADA (tela cheia) ════════ -->
+      <div id="submit-briefing" class="briefing">
 
-      <!-- Aviso de limite reduzido (rodada 2) -->
-      <div id="crisis-warning" class="error-msg mb-4" style="display:none">
-        <i class="ti ti-alert-triangle"></i>
-        <span id="crisis-warning-text"></span>
-      </div>
-
-      <!-- Restricao de investimento (Empresas, rodadas 2/3) -->
-      <div id="invest-limit-info" class="card mb-4" style="display:none">
-        <div class="fw-700 mb-1"><i class="ti ti-info-circle text-blue"></i> Restricao de investimento</div>
-        <div class="text-sm" id="invest-limit-text"></div>
-        <div id="undercap-warning" style="display:none" class="badge badge-red mt-2">
-          <i class="ti ti-alert-triangle"></i> Economia descapitalizada
+        <!-- Banner da rodada -->
+        <div class="round-banner" id="submit-banner">
+          <div class="round-banner-round" id="submit-round-label"></div>
+          <div class="round-banner-event" id="submit-event-name"></div>
+          <div class="round-banner-desc" id="submit-event-desc"></div>
         </div>
-      </div>
 
-      <!-- Sliders - Familias -->
-      <div id="sliders-familias" style="display:none">
-        <div class="card">
-          <h4 class="mb-4">Decisoes do setor Familias</h4>
+        <!-- Card de missão do setor -->
+        <div class="mission-card" id="mission-card">
+          <div class="mission-title" id="mission-title"></div>
+          <div class="mission-objective" id="mission-objective"></div>
+          <div class="mission-tip" id="mission-tip"></div>
+        </div>
 
-          <div class="slider-group">
-            <div class="slider-header">
-              <span class="slider-label">Propensao a consumir</span>
-              <span class="slider-value mono" id="val-c1">70%</span>
+        <!-- Aviso de limite reduzido (rodada 2) -->
+        <div id="crisis-warning" class="error-msg mb-4" style="display:none">
+          <i class="ti ti-alert-triangle"></i>
+          <span id="crisis-warning-text"></span>
+        </div>
+
+        <!-- Restrição de investimento (Empresas, rodadas 2/3) -->
+        <div id="invest-limit-info" class="card mb-4" style="display:none">
+          <div class="fw-700 mb-1"><i class="ti ti-info-circle text-blue"></i> Restrição de investimento</div>
+          <div class="text-sm" id="invest-limit-text"></div>
+          <div id="undercap-warning" style="display:none" class="badge badge-red mt-2">
+            <i class="ti ti-alert-triangle"></i> Economia descapitalizada
+          </div>
+        </div>
+
+        <!-- Identidade / Persona do Jogador -->
+        <div class="persona-header card" style="padding:0.75rem 1rem">
+          <div style="display:flex; justify-content:space-between; align-items:center" id="persona-display-mode">
+            <div>
+              <span class="text-xs text-muted text-uppercase">Sua persona</span>
+              <div class="fw-700 text-md text-green" id="player-persona-display">Gerando...</div>
             </div>
-            <p class="slider-help" id="helper-c1">De cada R$100 que voce ganha, voce gasta R$70 e poupa R$30.</p>
-            <div id="badge-c1-limit" class="badge badge-red mb-2" style="display:none">
-              <i class="ti ti-alert-triangle"></i> Limite alterado pelo evento
-            </div>
-            <input type="range" id="slider-c1"
-              min="10" max="95" step="1" value="70"
-              oninput="updateSlider('c1', this.value)">
-            <div class="slider-limits">
-              <span id="min-c1">10%</span>
-              <span id="max-c1">95%</span>
+            <div style="display:flex; gap:0.5rem">
+              <button class="btn btn-secondary btn-sm btn-inline" onclick="drawNewPersona()" title="Sortear outra persona" style="padding:0.25rem 0.5rem"><i class="ti ti-arrows-shuffle"></i></button>
+              <button class="btn btn-secondary btn-sm btn-inline" onclick="togglePersonaEdit(true)" style="padding:0.25rem 0.5rem"><i class="ti ti-edit"></i></button>
             </div>
           </div>
-
-          <div class="slider-group">
-            <div class="slider-header">
-              <span class="slider-label">Gasto minimo familiar por mes</span>
-              <span class="slider-value mono" id="val-c0">R$&nbsp;2.500</span>
+          <div style="display:none; justify-content:space-between; align-items:center; gap:0.5rem" id="persona-edit-mode">
+            <div style="flex:1">
+              <label for="persona-name-input" class="text-xs text-muted">Nome da persona</label>
+              <input type="text" id="persona-name-input" class="input-sm" style="width:100%; padding:0.375rem; font-size:0.875rem" maxlength="30">
             </div>
-            <p class="slider-help">Aluguel, comida, contas fixas. O que sua familia gasta mesmo sem renda.</p>
-            <div class="slider-helper text-muted text-sm" id="helper-c0">Equivale a R$50bi no modelo.</div>
-            <div id="badge-c0-limit" class="badge badge-red mt-2 mb-2" style="display:none">
-              <i class="ti ti-alert-triangle"></i> Limite reduzido pela crise
-            </div>
-            <input type="range" id="slider-c0"
-              min="500" max="5000" step="50" value="2500"
-              oninput="updateSlider('c0', this.value)">
-            <div class="slider-limits">
-              <span id="min-c0">R$500</span>
-              <span id="max-c0">R$5.000</span>
+            <div style="display:flex; gap:0.25rem; align-self:flex-end">
+              <button class="btn btn-primary btn-sm btn-inline" onclick="savePersonaName()" style="padding:0.375rem 0.5rem"><i class="ti ti-check"></i></button>
+              <button class="btn btn-secondary btn-sm btn-inline" onclick="togglePersonaEdit(false)" style="padding:0.375rem 0.5rem"><i class="ti ti-x"></i></button>
             </div>
           </div>
         </div>
-      </div>
 
-      <!-- Sliders - Empresas -->
-      <div id="sliders-empresas" style="display:none">
-        <div class="card">
-          <h4 class="mb-4">Decisoes do setor Empresas</h4>
-
-          <div class="slider-group">
-            <div class="slider-header">
-              <span class="slider-label">I &mdash; Investimento agregado (R$ bi)</span>
-              <span class="slider-value mono" id="val-I">80</span>
-            </div>
-            <p class="slider-help">Quanto as empresas investem em maquinas, fabricas e estoques.</p>
-            <div id="badge-I-limit" class="badge badge-red mb-2" style="display:none">
-              <i class="ti ti-alert-triangle"></i> Limite reduzido pela crise
-            </div>
-            <input type="range" id="slider-I"
-              min="10" max="200" step="1" value="80"
-              oninput="updateSlider('I', this.value)">
-            <div class="slider-limits">
-              <span id="min-I">10</span>
-              <span id="max-I">200</span>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <!-- Sliders - Governo -->
-      <div id="sliders-governo" style="display:none">
-        <div class="card">
-          <h4 class="mb-4">Decisoes do setor Governo</h4>
-
-          <div class="slider-group">
-            <div class="slider-header">
-              <span class="slider-label">G &mdash; Gastos do governo (R$ bi)</span>
-              <span class="slider-value mono" id="val-G">100</span>
-            </div>
-            <p class="slider-help">Quanto o governo gasta em estradas, hospitais, educacao.</p>
-            <input type="range" id="slider-G"
-              min="20" max="200" step="1" value="100"
-              oninput="updateSlider('G', this.value)">
-            <div class="slider-limits">
-              <span id="min-G">20</span>
-              <span id="max-G">200</span>
-            </div>
-          </div>
-
-          <div class="slider-group">
-            <div class="slider-header">
-              <span class="slider-label">T &mdash; Impostos (R$ bi)</span>
-              <span class="slider-value mono" id="val-T">100</span>
-            </div>
-            <p class="slider-help">Quanto o governo cobra de impostos. Mais T = menos renda disponivel para familias.</p>
-            <input type="range" id="slider-T"
-              min="20" max="200" step="1" value="100"
-              oninput="updateSlider('T', this.value)">
-            <div class="slider-limits">
-              <span id="min-T">20</span>
-              <span id="max-T">200</span>
-            </div>
-          </div>
-
-          <!-- Preview do déficit -->
-          <div class="card mt-3" id="deficit-preview" style="background:var(--bg-600)">
-            <div class="text-sm text-muted mb-1">Deficit fiscal atual (G - T)</div>
-            <div class="text-xl fw-700 mono" id="deficit-value">0</div>
-            <div class="text-sm" id="deficit-status"></div>
-          </div>
-        </div>
-      </div>
-
-      <!-- Botão de envio -->
-      <div class="mt-4">
-        <button class="btn btn-primary" id="btn-submit" onclick="submitDecision()">
-          <i class="ti ti-send"></i> Enviar minha decisao
+        <!-- CTA: iniciar o fluxo de decisão -->
+        <button class="btn btn-primary mt-2" onclick="startDecisionFlow()">
+          Começar a decidir <i class="ti ti-arrow-right"></i>
         </button>
-        <div id="submit-error" class="error-msg mt-3"></div>
       </div>
+
+      <!-- ════════ FLUXO DE DECISÃO (3 passos) ════════ -->
+      <div id="submit-flow" style="display:none">
+
+        <!-- Cabecalho compacto -->
+        <div class="flow-header">
+          <span class="flow-round mono" id="flow-round-label"></span>
+          <span class="flow-persona text-green" id="flow-persona-display"></span>
+        </div>
+
+        <!-- Stepper Progress Tracker -->
+        <div class="stepper mb-4" id="submit-stepper">
+          <div class="step-indicator active" id="step-1-indicator" onclick="changeStep(1)">
+            <div class="step-num">1</div>
+            <div class="step-title">Dilema</div>
+          </div>
+          <div class="step-line"></div>
+          <div class="step-indicator" id="step-2-indicator" onclick="changeStep(2)">
+            <div class="step-num">2</div>
+            <div class="step-title">Calibrar</div>
+          </div>
+          <div class="step-line"></div>
+          <div class="step-indicator" id="step-3-indicator" onclick="changeStep(3)">
+            <div class="step-num">3</div>
+            <div class="step-title">Apostar e Enviar</div>
+          </div>
+        </div>
+
+      <!-- PASSO 1: DILEMA NARRATIVO -->
+      <div id="step-1-panel" class="step-panel active">
+        <h4 class="mb-3 text-gold">Passo 1: Qual sua postura?</h4>
+        <p class="text-sm text-muted mb-4">Escolha uma postura para definir a faixa de calibragem dos seus parâmetros.</p>
+        <div class="dilemmas-grid" id="dilemmas-container" style="display:grid; gap:0.75rem; grid-template-columns:1fr">
+          <!-- Gerado dinamicamente via js -->
+        </div>
+        <div class="mt-4 text-right">
+          <button class="btn btn-primary btn-inline" onclick="changeStep(2)">Prosseguir <i class="ti ti-arrow-right"></i></button>
+        </div>
+      </div>
+
+      <!-- PASSO 2: CALIBRAR PARAMETROS -->
+      <div id="step-2-panel" class="step-panel" style="display:none">
+        <div style="display:flex; justify-content:space-between; align-items:center" class="mb-3">
+          <h4 class="text-gold">Passo 2: Calibrar parâmetros</h4>
+          <label style="display:inline-flex; align-items:center; gap:0.35rem; text-transform:none; font-size:0.75rem; cursor:pointer">
+            <input type="checkbox" id="toggle-simple-mode" onchange="toggleSimpleMode(this.checked)">
+            Modo Simples (Sliders)
+          </label>
+        </div>
+
+        <!-- Controles Customizados (Premium) -->
+        <div id="custom-controls-container">
+          
+          <!-- Famílias Customizados -->
+          <div id="controls-familias" style="display:none">
+            <!-- Split Bar para c1 -->
+            <div class="card mb-3">
+              <div class="slider-header">
+                <span class="slider-label">Divisor de Renda (c1)</span>
+                <span class="slider-value mono" id="custom-val-c1">70%</span>
+              </div>
+              <p class="slider-help">Divida a renda familiar de R$100 entre Gastar e Poupar.</p>
+              
+              <div class="split-bar-wrapper mt-3">
+                <div style="display:flex; justify-content:space-between" class="text-sm mb-2">
+                  <span class="text-green fw-700">Gastar: R$<span id="split-val-gastar">70</span></span>
+                  <span class="text-muted fw-700">Poupar: R$<span id="split-val-poupar">30</span></span>
+                </div>
+                <div class="split-bar-track" style="position:relative; height:32px; background:var(--bg-600); border:1px solid var(--border); border-radius:var(--r-input); overflow:hidden">
+                  <div class="split-bar-fill-gastar" id="split-fill-gastar" style="position:absolute; top:0; left:0; height:100%; width:70%; background:rgba(0, 230, 118, 0.2)"></div>
+                  <div class="split-bar-fill-poupar" id="split-fill-poupar" style="position:absolute; top:0; right:0; height:100%; width:30%; background:rgba(75, 97, 117, 0.2)"></div>
+                  <input type="range" id="slider-c1" class="split-slider" min="10" max="95" step="1" value="70" style="position:absolute; top:0; left:0; width:100%; height:100%; margin:0; opacity:0.1; cursor:pointer; -webkit-appearance:none; background:transparent" oninput="updateSlider('c1', this.value)">
+                </div>
+              </div>
+            </div>
+
+            <!-- Stepper para c0 -->
+            <div class="card mb-3">
+              <div class="slider-header">
+                <span class="slider-label">Gasto Fixo Familiar (c0)</span>
+                <span class="slider-value mono" id="custom-val-c0">R$ 2.500</span>
+              </div>
+              <span class="badge badge-red mt-1" id="badge-c0-limit" style="display:none"><i class="ti ti-alert-triangle"></i> Gasto máximo reduzido pela crise</span>
+              <p class="slider-help">Gastos essenciais por mês (comida, moradia) mesmo sem renda.</p>
+              
+              <div class="stepper-c0-wrapper mt-3" style="display:flex; align-items:center; justify-content:center; gap:1.5rem">
+                <button type="button" class="btn btn-secondary btn-inline" onclick="adjustC0(-250)" style="font-size:1.5rem; width:48px; height:48px; display:flex; align-items:center; justify-content:center; border-radius:50%; padding:0">-</button>
+                <div class="text-center" style="min-width:140px">
+                  <div class="text-xl fw-700 text-green mono" id="stepper-c0-display">R$ 2.500</div>
+                  <div class="text-sm text-muted">Equivale a R$ <span id="stepper-c0-bi">50</span>bi</div>
+                </div>
+                <button type="button" class="btn btn-secondary btn-inline" onclick="adjustC0(250)" style="font-size:1.5rem; width:48px; height:48px; display:flex; align-items:center; justify-content:center; border-radius:50%; padding:0">+</button>
+              </div>
+              <input type="range" id="slider-c0" min="500" max="5000" step="50" value="2500" style="display:none" oninput="updateSlider('c0', this.value)">
+            </div>
+          </div>
+
+          <!-- Empresas Customizados -->
+          <div id="controls-empresas" style="display:none">
+            <div class="card mb-3">
+              <div class="slider-header">
+                <span class="slider-label">Investimento (I)</span>
+                <span class="slider-value mono text-blue" id="custom-val-I">80</span>
+              </div>
+              <span class="badge badge-red mt-1" id="badge-I-limit" style="display:none"><i class="ti ti-alert-triangle"></i> Teto de investimento limitado</span>
+              <p class="slider-help">Quanto a sua empresa investe em infraestrutura e expansão.</p>
+
+              <input type="range" id="slider-I" class="mt-3" min="10" max="200" step="1" value="80" oninput="updateSlider('I', this.value)">
+              <div class="slider-limits"><span id="min-I">10</span><span id="max-I">200</span></div>
+            </div>
+          </div>
+
+          <!-- Governo Customizados -->
+          <div id="controls-governo" style="display:none">
+            <div class="card mb-3">
+              <h4 class="mb-2">Mesa do Orçamento</h4>
+              <p class="slider-help mb-3">Gerencie os Gastos (G) e os Impostos (T).</p>
+              
+              <div class="budget-columns-container mb-3" style="display:flex; justify-content:space-around; align-items:flex-end; height:140px; background:var(--bg-600); border:1px solid var(--border); border-radius:var(--r-card); padding:1rem 0.5rem; position:relative">
+                <!-- G Column -->
+                <div class="budget-col" style="display:flex; flex-direction:column; align-items:center; flex:1">
+                  <div class="budget-bar-fill" id="budget-fill-G" style="width:30px; height:50%; background:var(--gold); border-radius:4px; transition: height 0.15s ease-out"></div>
+                  <span class="fw-700 mt-2 text-gold text-sm">G: <span id="budget-fill-val-G">100</span></span>
+                </div>
+                
+                <!-- Central Gap -->
+                <div class="budget-gap-wrap text-center" style="flex:1.2; display:flex; flex-direction:column; align-items:center; justify-content:center; align-self:center">
+                  <div id="budget-gap-indicator" class="badge badge-gold" style="font-size:0.75rem; padding:0.4rem 0.6rem; border-radius:var(--r-input)">
+                    Déficit: 0
+                  </div>
+                </div>
+                
+                <!-- T Column -->
+                <div class="budget-col" style="display:flex; flex-direction:column; align-items:center; flex:1">
+                  <div class="budget-bar-fill" id="budget-fill-T" style="width:30px; height:50%; background:var(--blue); border-radius:4px; transition: height 0.15s ease-out"></div>
+                  <span class="fw-700 mt-2 text-blue text-sm">T: <span id="budget-fill-val-T">100</span></span>
+                </div>
+              </div>
+
+              <!-- Real range sliders G and T -->
+              <div class="budget-sliders">
+                <div class="slider-group">
+                  <div class="slider-header">
+                    <span class="slider-label">G - Gastos do Governo (R$ bi)</span>
+                    <span class="slider-value mono" id="val-G">100</span>
+                  </div>
+                  <input type="range" id="slider-G" min="20" max="200" step="1" value="100" oninput="updateSlider('G', this.value)">
+                </div>
+                <div class="slider-group">
+                  <div class="slider-header">
+                    <span class="slider-label">T - Impostos (R$ bi)</span>
+                    <span class="slider-value mono" id="val-T">100</span>
+                  </div>
+                  <input type="range" id="slider-T" min="20" max="200" step="1" value="100" oninput="updateSlider('T', this.value)">
+                </div>
+              </div>
+            </div>
+          </div>
+
+        </div>
+
+        <!-- Modo Simples Fallback Container -->
+        <div id="simple-sliders-container" style="display:none">
+          <!-- Familias Simples -->
+          <div id="sliders-familias-simple" style="display:none">
+            <div class="card mb-3">
+              <div class="slider-group">
+                <div class="slider-header">
+                  <span class="slider-label">Propensão a consumir (c1)</span>
+                  <span class="slider-value mono" id="val-c1-simple">70%</span>
+                </div>
+                <input type="range" id="slider-c1-simple" min="10" max="95" step="1" value="70" oninput="syncSimpleSlider('c1', this.value)">
+              </div>
+              <div class="slider-group">
+                <div class="slider-header">
+                  <span class="slider-label">Gasto Fixo Familiar (c0)</span>
+                  <span class="slider-value mono" id="val-c0-simple">R$ 2.500</span>
+                </div>
+                <input type="range" id="slider-c0-simple" min="500" max="5000" step="50" value="2500" oninput="syncSimpleSlider('c0', this.value)">
+              </div>
+            </div>
+          </div>
+          <!-- Empresas Simples -->
+          <div id="sliders-empresas-simple" style="display:none">
+            <div class="card mb-3">
+              <div class="slider-group">
+                <div class="slider-header">
+                  <span class="slider-label">I - Investimento (R$ bi)</span>
+                  <span class="slider-value mono" id="val-I-simple">80</span>
+                </div>
+                <input type="range" id="slider-I-simple" min="10" max="200" step="1" value="80" oninput="syncSimpleSlider('I', this.value)">
+              </div>
+            </div>
+          </div>
+          <!-- Governo Simples -->
+          <div id="sliders-governo-simple" style="display:none">
+            <div class="card mb-3">
+              <div class="slider-group">
+                <div class="slider-header">
+                  <span class="slider-label">G - Gastos (R$ bi)</span>
+                  <span class="slider-value mono" id="val-G-simple">100</span>
+                </div>
+                <input type="range" id="slider-G-simple" min="20" max="200" step="1" value="100" oninput="syncSimpleSlider('G', this.value)">
+              </div>
+              <div class="slider-group">
+                <div class="slider-header">
+                  <span class="slider-label">T - Impostos (R$ bi)</span>
+                  <span class="slider-value mono" id="val-T-simple">100</span>
+                </div>
+                <input type="range" id="slider-T-simple" min="20" max="200" step="1" value="100" oninput="syncSimpleSlider('T', this.value)">
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Agulha do Consenso (Huddle) -->
+        <div class="card mb-3" id="huddle-panel">
+          <div class="fw-700 text-sm mb-2" style="display:flex; justify-content:space-between">
+            <span><i class="ti ti-users text-blue"></i> Consenso do setor</span>
+            <span class="mono text-xs" id="huddle-val">-</span>
+          </div>
+          <div class="huddle-track" style="height:10px; background:var(--bg-600); border-radius:var(--r-pill); position:relative; overflow:hidden">
+            <div id="huddle-fill" style="height:100%; width:0%; background:var(--blue); opacity:0.15"></div>
+            <div id="huddle-needle" style="position:absolute; top:0; width:4px; height:100%; background:var(--blue); display:none"></div>
+          </div>
+          <p class="text-xs text-muted mt-2" id="huddle-hint">Exibindo a média dos parâmetros de quem já enviou.</p>
+        </div>
+
+        <div class="step-actions mt-4" style="display:flex; justify-content:space-between">
+          <button class="btn btn-secondary btn-inline" onclick="changeStep(1)"><i class="ti ti-arrow-left"></i> Voltar</button>
+          <button class="btn btn-primary btn-inline" onclick="changeStep(3)">Prosseguir <i class="ti ti-arrow-right"></i></button>
+        </div>
+      </div>
+
+      <!-- PASSO 3: APOSTAR E ENVIAR -->
+      <div id="step-3-panel" class="step-panel" style="display:none">
+        <h4 class="mb-3 text-gold">Passo 3: Aposta & Envio</h4>
+        
+        <!-- Aposta na meta -->
+        <div class="card mb-3">
+          <div class="fw-700 mb-2"><i class="ti ti-target-arrow text-gold"></i> Aposta na Meta Coletiva</div>
+          <p class="text-sm text-muted mb-3">A turma vai bater a meta de PIB de <strong class="text-gold"><span id="bet-target-pib">0</span> bi</strong>?</p>
+          <div class="bet-options" style="display:flex; gap:0.75rem">
+            <button type="button" class="btn btn-secondary btn-inline flex-1 text-center" id="btn-bet-sim" onclick="setBet('sim')" style="padding:0.75rem">
+              <i class="ti ti-circle-check text-green"></i> Sim
+            </button>
+            <button type="button" class="btn btn-secondary btn-inline flex-1 text-center" id="btn-bet-nao" onclick="setBet('nao')" style="padding:0.75rem">
+              <i class="ti ti-circle-x text-red"></i> Não
+            </button>
+          </div>
+
+          <!-- Nivel de confianca (stake): so aparece apos escolher uma direcao -->
+          <div id="bet-stake-row" class="mt-3" style="display:none">
+            <p class="text-xs text-muted mb-2">Aposte com mais ou menos confiança. Quanto maior o ganho, maior o risco:</p>
+            <div class="stake-options" style="display:flex; gap:0.75rem">
+              <button type="button" class="btn btn-secondary btn-inline flex-1 text-center" id="btn-stake-seguro" onclick="setBetStake('seguro')" style="padding:0.6rem; flex-direction:column; gap:0.15rem">
+                <span class="fw-700">Seguro</span>
+                <span class="text-xs mono"><span class="text-green">+6</span> / <span class="text-red">-2</span></span>
+              </button>
+              <button type="button" class="btn btn-secondary btn-inline flex-1 text-center" id="btn-stake-ousado" onclick="setBetStake('ousado')" style="padding:0.6rem; flex-direction:column; gap:0.15rem">
+                <span class="fw-700">Ousado</span>
+                <span class="text-xs mono"><span class="text-green">+15</span> / <span class="text-red">-8</span></span>
+              </button>
+            </div>
+          </div>
+
+          <p class="text-xs text-muted mt-2">Acertar rende pontos ao seu setor, errar desconta. Toque de novo na mesma opção para não apostar (sem risco).</p>
+        </div>
+
+        <!-- Trava de decisão precoce -->
+        <div class="card mb-4" id="lock-card">
+          <div class="fw-700 mb-2"><i class="ti ti-lock text-red"></i> Travar decisão</div>
+          <p class="text-sm text-muted mb-3">Trave a decisão restando 15s ou mais no cronômetro para ganhar <strong>+5 pontos de compromisso</strong>. Após travar, você não poderá alterar os valores!</p>
+          <button type="button" class="btn btn-danger w-full" id="btn-lock-decision" onclick="lockDecisionEarly()">
+            <i class="ti ti-lock"></i> Travar e Enviar (+5 pts)
+          </button>
+        </div>
+
+        <!-- Envio padrão sem travar -->
+        <div class="mt-4">
+          <button class="btn btn-primary w-full" id="btn-submit" onclick="submitDecision()">
+            <i class="ti ti-send"></i> Enviar minha decisão (Sem travar)
+          </button>
+          <p class="text-xs text-muted text-center mt-2">Permite alterações ate o fim da rodada.</p>
+          <div id="submit-error" class="error-msg mt-3"></div>
+        </div>
+
+        <div class="step-actions mt-4">
+          <button class="btn btn-secondary btn-inline" onclick="changeStep(2)"><i class="ti ti-arrow-left"></i> Voltar</button>
+        </div>
+      </div>
+
+      </div><!-- /#submit-flow -->
     </div>
 
     <!-- ════════════════════════════════════════════════════════
@@ -306,9 +511,9 @@
       <div class="card mb-4" id="submitted-summary"></div>
 
       <div class="card text-center" style="padding:1.5rem">
-        <p class="text-muted">Voce pode alterar sua decisao enquanto a rodada estiver aberta.</p>
+        <p class="text-muted">Você pode alterar sua decisão enquanto a rodada estiver aberta.</p>
         <button class="btn btn-secondary mt-4" onclick="goBackToSubmit()">
-          <i class="ti ti-edit"></i> Alterar minha decisao
+          <i class="ti ti-edit"></i> Alterar minha decisão
         </button>
       </div>
 
@@ -328,9 +533,9 @@
 
       <!-- PIB grande -->
       <div class="result-pib card mb-4">
-        <div class="result-pib-label">PIB de Equilibrio</div>
+        <div class="result-pib-label">PIB de Equilíbrio</div>
         <div class="result-pib-value" id="result-Y">0</div>
-        <div class="result-pib-unit">bilhoes de reais</div>
+        <div class="result-pib-unit">bilhões de reais</div>
         <!-- Comparacao com rodada anterior -->
         <div id="result-comparison" class="comparison-row mt-3" style="justify-content:center"></div>
       </div>
@@ -350,7 +555,7 @@
 
       <!-- Contribuicao do setor -->
       <div class="card mb-4">
-        <h4 class="mb-3" id="result-sector-title">Sua contribuicao</h4>
+        <h4 class="mb-3" id="result-sector-title">Sua contribuição</h4>
         <div id="result-sector-detail"></div>
       </div>
 
@@ -368,7 +573,7 @@
       <div class="dots-loading">
         <span></span><span></span><span></span>
       </div>
-      <p class="text-sm text-muted text-center mt-2">Aguardando o mestre avancar para a proxima rodada...</p>
+      <p class="text-sm text-muted text-center mt-2">Aguardando o mestre avançar para a próxima rodada...</p>
     </div>
 
     <!-- ════════════════════════════════════════════════════════
@@ -377,7 +582,7 @@
     <div id="view-final" class="view">
       <div class="page-header">
         <h2>Resultado Final</h2>
-        <p class="mt-2">Voce participou das 3 rodadas!</p>
+        <p class="mt-2">Você participou das 3 rodadas!</p>
       </div>
 
       <!-- Posicao final do seu setor -->
@@ -388,7 +593,7 @@
 
       <!-- Grafico de barras -->
       <div class="card mb-4">
-        <h4 class="mb-2">Evolucao do PIB</h4>
+        <h4 class="mb-2">Evolução do PIB</h4>
         <div class="bar-chart" id="final-bar-chart"></div>
       </div>
 
@@ -398,15 +603,21 @@
         <div id="final-highlights"></div>
       </div>
 
+      <!-- Conquistas do Setor -->
+      <div class="card mb-4" id="final-badges-card" style="display:none">
+        <h4 class="mb-3"><i class="ti ti-award text-gold"></i> Conquistas do Setor</h4>
+        <div id="final-badges-container" style="display:flex; flex-direction:column; gap:0.75rem"></div>
+      </div>
+
       <!-- Resumo do setor -->
       <div class="card mb-4">
         <h4 class="mb-3" id="final-sector-title">Resumo do seu setor</h4>
         <div id="final-sector-summary"></div>
       </div>
 
-      <!-- Conclusao -->
+      <!-- Conclusão -->
       <div class="card">
-        <h4 class="mb-3">Conclusao</h4>
+        <h4 class="mb-3">Conclusão</h4>
         <ul class="insight-list" id="final-conclusion"></ul>
       </div>
     </div>
@@ -420,7 +631,7 @@
         <h2 class="mt-4">Jogo encerrado</h2>
         <p class="mt-2">O apresentador encerrou a sala. Obrigado por participar!</p>
         <a href="index.html" class="btn btn-secondary btn-inline mt-6">
-          <i class="ti ti-home"></i> Inicio
+          <i class="ti ti-home"></i> Início
         </a>
       </div>
     </div>

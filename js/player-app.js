@@ -47,7 +47,7 @@ function esc(s) {
     .replace(/>/g,'&gt;');
 }
 
-const SECTOR_LABELS = { familias: 'Familias', empresas: 'Empresas', governo: 'Governo' };
+const SECTOR_LABELS = { familias: 'Famílias', empresas: 'Empresas', governo: 'Governo' };
 
 function sectorColor(s) {
   return s === 'familias' ? 'green' : s === 'empresas' ? 'blue' : 'gold';
@@ -111,7 +111,7 @@ function setLoading(btn, loading) {
   _roomCode = roomFromUrl || storedRoom;
 
   if (!_roomCode || !_playerId || !_playerName) {
-    showFatalError('Sessao invalida. Por favor, entre na sala novamente.');
+    showFatalError('Sessão inválida. Por favor, entre na sala novamente.');
     return;
   }
 
@@ -131,7 +131,7 @@ async function startPlayerSession() {
   try {
     const exists = await roomExists(_roomCode);
     if (!exists) {
-      showFatalError('Sala nao encontrada. O jogo pode ter sido encerrado.');
+      showFatalError('Sala não encontrada. O jogo pode ter sido encerrado.');
       return;
     }
 
@@ -144,6 +144,7 @@ async function startPlayerSession() {
       await addPlayer(_roomCode, _playerId, _playerName);
     } else {
       _sector = players[_playerId].sector || null;
+      _persona = players[_playerId].persona || null;
     }
 
     // Carregar resultados já existentes
@@ -171,12 +172,12 @@ async function startPlayerSession() {
     // Indicador de conexão
     onConnectionChange(connected => {
       document.getElementById('conn-dot').className    = 'conn-dot' + (connected ? ' connected' : '');
-      document.getElementById('conn-label').textContent = connected ? 'Conectado' : 'Sem conexao';
+      document.getElementById('conn-label').textContent = connected ? 'Conectado' : 'Sem conexão';
     });
 
   } catch (err) {
     console.error(err);
-    showFatalError('Erro ao conectar. Verifique sua internet e recarregue a pagina.');
+    showFatalError('Erro ao conectar. Verifique sua internet e recarregue a página.');
   }
 }
 
@@ -311,8 +312,12 @@ async function chooseSector(sector) {
   document.getElementById(`card-${sector}`)?.classList.add(`selected-${sector}`);
 
   _sector = sector;
+  const sectorPersonas = PERSONAS[sector];
+  const randomPersona = sectorPersonas[Math.floor(Math.random() * sectorPersonas.length)];
+  _persona = randomPersona;
+
   try {
-    await updatePlayerSector(_roomCode, _playerId, sector);
+    await updatePlayerSector(_roomCode, _playerId, sector, randomPersona);
     localStorage.setItem('playerSector', sector);
     // Mostrar tela de espera
     showView('view-waiting');
@@ -326,6 +331,7 @@ async function chooseSector(sector) {
     }
     // Reverter visualmente
     _sector = _players[_playerId]?.sector || null;
+    _persona = _players[_playerId]?.persona || null;
   }
 }
 
@@ -336,7 +342,7 @@ function setupWaitingView(msg) {
   document.getElementById('waiting-message').textContent = msg;
 
   const sectorIcons = { familias: 'ti-home', empresas: 'ti-building-factory', governo: 'ti-building-bank' };
-  const sectorNames = { familias: 'Familias', empresas: 'Empresas', governo: 'Governo' };
+  const sectorNames = { familias: 'Famílias', empresas: 'Empresas', governo: 'Governo' };
   const sectorColors = { familias: 'green', empresas: 'blue', governo: 'gold' };
 
   if (_sector) {
@@ -359,12 +365,50 @@ function loadRoundLimits(round, callback) {
 // ── View de submissão ─────────────────────────────────────────
 
 function setupSubmitView(round) {
+  _currentStep = 1;
+  _selectedStance = null;
+  _selectedBet = null;
+  _selectedBetStake = 'seguro';
+  _lockedEarly = false;
+
+  // Limpa qualquer estado "desabilitado" herdado da rodada anterior (trava de
+  // decisao ou cronometro esgotado desabilitam os controles e isso precisa ser
+  // revertido ao iniciar uma nova rodada, senao os botoes "Prosseguir"/"Enviar"
+  // ficam travados a partir da rodada 2).
+  enableSubmissionControls();
+
+  // Renderiza persona
+  renderPersona();
+
+  // Reinicia stepper
+  changeStep(1);
+
+  // Renderiza dilemas
+  renderDilemmas(round);
+
+  // Zera botões de aposta
+  setBet(null);
+
+  // Título da aposta
+  const targetPibEl = document.getElementById('bet-target-pib');
+  if (targetPibEl) {
+    targetPibEl.textContent = ROUND_EVENTS[round].scoring.targetY;
+  }
+
+  // Reseta trava
+  const lockCard = document.getElementById('lock-card');
+  if (lockCard) lockCard.style.display = '';
+
   const event = ROUND_EVENTS[round];
 
   // Banner
   document.getElementById('submit-round-label').textContent  = `Rodada ${round} de 3`;
   document.getElementById('submit-event-name').textContent   = event.name;
   document.getElementById('submit-event-desc').textContent   = event.description;
+
+  // Cabecalho compacto do fluxo de decisao
+  const flowLabel = document.getElementById('flow-round-label');
+  if (flowLabel) flowLabel.textContent = `Rodada ${round} de 3 - ${event.name}`;
 
   // Card de missão do setor
   const mission = SECTOR_MISSIONS[_sector];
@@ -376,13 +420,22 @@ function setupSubmitView(round) {
     document.getElementById('mission-tip').textContent       = mission.tip;
   }
 
-  // Mostrar apenas os sliders do setor do jogador
+  // Mostrar os controles do setor
   ['familias', 'empresas', 'governo'].forEach(s => {
-    document.getElementById(`sliders-${s}`).style.display = s === _sector ? '' : 'none';
+    const el = document.getElementById(`controls-${s}`);
+    if (el) el.style.display = s === _sector ? '' : 'none';
+    const elSimple = document.getElementById(`sliders-${s}-simple`);
+    if (elSimple) elSimple.style.display = s === _sector ? '' : 'none';
   });
 
-  // Reabilitar o botão de envio (pode ter sido travado pelo cronômetro)
-  document.getElementById('btn-submit').disabled = false;
+  // Inicializar o modo simples conforme checkbox
+  const simpleCheck = document.getElementById('toggle-simple-mode');
+  if (simpleCheck) {
+    toggleSimpleMode(simpleCheck.checked);
+  }
+
+  // Iniciar listener do consenso (huddle)
+  startHuddleListener(round);
 
   // Configurar limites dos sliders
   applyLimitsToSliders(round);
@@ -394,6 +447,32 @@ function setupSubmitView(round) {
 
   // Cronômetro sincronizado (mesmo instante de fim do mestre)
   startPlayerTimer();
+
+  // Mostra primeiro o briefing da rodada; o fluxo de decisao (3 passos) so
+  // aparece apos o jogador tocar em "Comecar a decidir".
+  showBriefing();
+}
+
+// Lê os valores atuais dos sliders e os converte para os parâmetros do modelo
+// (c0/c1/I/G/T). Reusado pela submissão e pela projeção ao vivo.
+function readCurrentValues() {
+  if (_sector === 'familias') {
+    // c1: slider em % (10-95) → decimal; c0: slider em R$/mês (500-5000) → R$bi
+    return {
+      c1: parseFloat(document.getElementById('slider-c1').value) / 100,
+      c0: parseFloat(document.getElementById('slider-c0').value) / 50
+    };
+  }
+  if (_sector === 'empresas') {
+    return { I: parseFloat(document.getElementById('slider-I').value) };
+  }
+  if (_sector === 'governo') {
+    return {
+      G: parseFloat(document.getElementById('slider-G').value),
+      T: parseFloat(document.getElementById('slider-T').value)
+    };
+  }
+  return {};
 }
 
 // ── Cronômetro sincronizado ───────────────────────────────────
@@ -444,14 +523,16 @@ function applyLimitsToSliders(round) {
     setSlider('c0', limits.c0.min * 50, limits.c0.max * 50, 2500, 50);
 
     const c0Limited = round === 2 && limits.c0.max < 100;
-    document.getElementById('badge-c0-limit').style.display = c0Limited ? '' : 'none';
+    const badgeC0 = document.getElementById('badge-c0-limit');
+    if (badgeC0) badgeC0.style.display = c0Limited ? '' : 'none';
   }
 
   if (_sector === 'empresas') {
     setSlider('I', limits.I.min, limits.I.max, Math.min(80, limits.I.max), 1);
 
-    const iLimited = round >= 2 || (round === 2 && limits.I.max < 200);
-    document.getElementById('badge-I-limit').style.display = iLimited ? '' : 'none';
+    const iLimited = limits.I.max < 200;
+    const badgeI = document.getElementById('badge-I-limit');
+    if (badgeI) badgeI.style.display = iLimited ? '' : 'none';
 
     if (round >= 2 && _prevResult) {
       const infoEl = document.getElementById('invest-limit-info');
@@ -476,9 +557,9 @@ function applyLimitsToSliders(round) {
     let msg = '';
     if (_sector === 'familias') {
       const maxMensal = (limits.c0.max * 50).toLocaleString('pt-BR');
-      msg = `Crise de confianca: gasto maximo caiu para R$${maxMensal}/mes (c₀ de R$${limits.c0.max}bi).`;
+      msg = `Crise de confiança: gasto máximo caiu para R$${maxMensal}/mês (c₀ de R$${limits.c0.max}bi).`;
     } else if (_sector === 'empresas') {
-      msg = `Crise de confianca: o limite maximo de I caiu de R$200bi para R$${limits.I.max}bi.`;
+      msg = `Crise de confiança: o limite máximo de I caiu de R$200bi para R$${limits.I.max}bi.`;
     }
     if (msg) {
       warnText.textContent = msg;
@@ -499,18 +580,20 @@ function updateSliderHelper(id, value) {
   if (id === 'c1') {
     const pct = Math.round(value);
     const el = document.getElementById('helper-c1');
-    if (el) el.textContent = `De cada R$100 que voce ganha, voce gasta R$${pct} e poupa R$${100 - pct}.`;
+    if (el) el.textContent = `De cada R$100 que você ganha, você gasta R$${pct} e poupa R$${100 - pct}.`;
   }
   if (id === 'c0') {
     const macro = Math.round(value / 50);
     const el = document.getElementById('helper-c0');
-    if (el) el.textContent = `Equivale a R$${macro}bi no modelo macroeconomico.`;
+    if (el) el.textContent = `Equivale a R$${macro}bi no modelo macroeconômico.`;
   }
 }
 
 function setSlider(id, min, max, defaultVal, step) {
   const slider = document.getElementById(`slider-${id}`);
+  const simpleSlider = document.getElementById(`slider-${id}-simple`);
   const valEl  = document.getElementById(`val-${id}`);
+  const valElSimple = document.getElementById(`val-${id}-simple`);
   const minEl  = document.getElementById(`min-${id}`);
   const maxEl  = document.getElementById(`max-${id}`);
   if (!slider) return;
@@ -519,19 +602,43 @@ function setSlider(id, min, max, defaultVal, step) {
   slider.max  = max;
   slider.step = step;
 
+  if (simpleSlider) {
+    simpleSlider.min  = min;
+    simpleSlider.max  = max;
+    simpleSlider.step = step;
+  }
+
   const safeDefault = Math.min(Math.max(defaultVal, min), max);
   slider.value = safeDefault;
+  if (simpleSlider) simpleSlider.value = safeDefault;
 
   if (valEl) valEl.textContent = fmtSliderVal(id, safeDefault);
+  if (valElSimple) valElSimple.textContent = fmtSliderVal(id, safeDefault);
   if (minEl) minEl.textContent = fmtSliderVal(id, min);
   if (maxEl) maxEl.textContent = fmtSliderVal(id, max);
   updateSliderHelper(id, safeDefault);
+  
+  // Atualizar visuais customizados
+  syncCustomControlsVisuals();
 }
 
 function updateSlider(id, value) {
   const valEl = document.getElementById(`val-${id}`);
+  const valElSimple = document.getElementById(`val-${id}-simple`);
+  const simpleSlider = document.getElementById(`slider-${id}-simple`);
+  const realSlider = document.getElementById(`slider-${id}`);
+
+  // Sincronizar valores
+  if (realSlider && realSlider.value !== value) realSlider.value = value;
+  if (simpleSlider && simpleSlider.value !== value) simpleSlider.value = value;
+
   if (valEl) valEl.textContent = fmtSliderVal(id, value);
+  if (valElSimple) valElSimple.textContent = fmtSliderVal(id, value);
   updateSliderHelper(id, value);
+  
+  // Atualizar visuais customizados
+  syncCustomControlsVisuals();
+
   if (id === 'G' || id === 'T') updateDeficitPreview();
 }
 
@@ -552,9 +659,9 @@ function updateDeficitPreview() {
   if (deficit > event.deficitThreshold) {
     statEl.innerHTML = `<span class="text-red"><i class="ti ti-alert-triangle"></i> Acima do limite (R$${event.deficitThreshold}bi): penalidade de ${(event.deficitPenalty * 100).toFixed(0)}% em c&#8320;.</span>`;
   } else if (deficit > 0) {
-    statEl.innerHTML = `<span class="text-gold">Deficit de R$${deficit.toFixed(0)}bi (dentro do limite de R$${event.deficitThreshold}bi).</span>`;
+    statEl.innerHTML = `<span class="text-gold">Déficit de R$${deficit.toFixed(0)}bi (dentro do limite de R$${event.deficitThreshold}bi).</span>`;
   } else {
-    statEl.innerHTML = `<span class="text-green">Orcamento equilibrado ou superavitario.</span>`;
+    statEl.innerHTML = `<span class="text-green">Orçamento equilibrado ou superavitário.</span>`;
   }
 }
 
@@ -563,40 +670,24 @@ function updateDeficitPreview() {
 async function submitDecision() {
   const btn   = document.getElementById('btn-submit');
   const errEl = document.getElementById('submit-error');
-  errEl.classList.remove('show');
+  if (errEl) errEl.classList.remove('show');
 
-  let values = {};
-
-  if (_sector === 'familias') {
-    // slider c1 está em % (10-95) → converte para decimal (0.10-0.95)
-    // slider c0 está em R$/mês (500-5000) → converte para R$bi (10-100)
-    values = {
-      c1: parseFloat(document.getElementById('slider-c1').value) / 100,
-      c0: parseFloat(document.getElementById('slider-c0').value) / 50
-    };
-  } else if (_sector === 'empresas') {
-    values = {
-      I: parseFloat(document.getElementById('slider-I').value)
-    };
-  } else if (_sector === 'governo') {
-    values = {
-      G: parseFloat(document.getElementById('slider-G').value),
-      T: parseFloat(document.getElementById('slider-T').value)
-    };
-  }
+  const values = readCurrentValues();
 
   setLoading(btn, true);
 
   try {
     const round = _config?.currentRound;
-    await submitRoundValues(_roomCode, round, _playerId, values);
+    await submitRoundValues(_roomCode, round, _playerId, values, _selectedStance, _selectedBet, false, _selectedBetStake);
     _lastSubmission = values;
     showView('view-submitted');
     renderSubmittedSummary(values);
   } catch (err) {
     console.error(err);
-    errEl.textContent = 'Erro ao enviar. Tente novamente.';
-    errEl.classList.add('show');
+    if (errEl) {
+      errEl.textContent = 'Erro ao enviar. Tente novamente.';
+      errEl.classList.add('show');
+    }
   } finally {
     setLoading(btn, false);
   }
@@ -606,8 +697,8 @@ function renderSubmittedSummary(values) {
   const el = document.getElementById('submitted-summary');
   const items = Object.entries(values).map(([k, v]) => {
     const labels = {
-      c1: 'Propensao a consumir',
-      c0: 'Gasto minimo familiar',
+      c1: 'Propensão a consumir',
+      c0: 'Gasto mínimo familiar',
       I:  'I Investimento',
       G:  'G Gastos do governo',
       T:  'T Impostos'
@@ -617,7 +708,7 @@ function renderSubmittedSummary(values) {
       fmt = `${Math.round(v * 100)}% <span class="text-muted text-sm">(c&#8321; = ${Number(v).toFixed(2)})</span>`;
     } else if (k === 'c0') {
       const mensal = Math.round(v * 50).toLocaleString('pt-BR');
-      fmt = `R$${mensal}/mes <span class="text-muted text-sm">(c&#8320; = R$${Math.round(v)}bi)</span>`;
+      fmt = `R$${mensal}/mês <span class="text-muted text-sm">(c&#8320; = R$${Math.round(v)}bi)</span>`;
     } else {
       fmt = `R$${Math.round(v)}bi`;
     }
@@ -652,7 +743,7 @@ function renderScoreBlock(result) {
   const bonusEl = document.getElementById('result-score-bonus');
   if (result.scoring?.collectiveBonus) {
     bonusEl.style.display = '';
-    bonusEl.innerHTML = `<i class="ti ti-target-arrow"></i> Meta de PIB atingida: +${result.scoring.collectiveBonus} de bonus para todos os setores.`;
+    bonusEl.innerHTML = `<i class="ti ti-target-arrow"></i> Meta de PIB atingida: +${result.scoring.collectiveBonus} de bônus para todos os setores.`;
   } else {
     bonusEl.style.display = 'none';
   }
@@ -686,31 +777,31 @@ function renderRoundResult(result, round) {
   // Contribuição do setor
   const sectorTitle = document.getElementById('result-sector-title');
   const sectorDetail = document.getElementById('result-sector-detail');
-  const sectorNames = { familias: 'Familias', empresas: 'Empresas', governo: 'Governo' };
-  sectorTitle.textContent = `Contribuicao do setor ${sectorNames[_sector] || ''}`;
+  const sectorNames = { familias: 'Famílias', empresas: 'Empresas', governo: 'Governo' };
+  sectorTitle.textContent = `Contribuição do setor ${sectorNames[_sector] || ''}`;
 
   let detailRows = [];
   if (_sector === 'familias') {
     detailRows = [
-      { label: 'c&#8321; medio do setor', value: result.c1Eff?.toFixed(2) },
-      { label: 'c&#8320; medio do setor', value: fmtBI(result.c0Raw) },
+      { label: 'c&#8321; médio do setor', value: result.c1Eff?.toFixed(2) },
+      { label: 'c&#8320; médio do setor', value: fmtBI(result.c0Raw) },
       { label: 'Multiplicador gerado', value: `${result.multiplier?.toFixed(2)}x` },
     ];
   } else if (_sector === 'empresas') {
     detailRows = [
-      { label: 'I medio do setor', value: fmtBI(result.IEff) },
+      { label: 'I médio do setor', value: fmtBI(result.IEff) },
     ];
     if (result.limits?.I?.limitedBySavings) {
-      detailRows.push({ label: 'Limite pela poupanca anterior', value: fmtBI(result.limits.I.max) });
+      detailRows.push({ label: 'Limite pela poupança anterior', value: fmtBI(result.limits.I.max) });
     }
   } else if (_sector === 'governo') {
     detailRows = [
-      { label: 'G medio do setor', value: fmtBI(result.GEff) },
-      { label: 'T medio do setor', value: fmtBI(result.TEff) },
-      { label: 'Deficit (G - T)',  value: fmtBI(result.deficit) },
+      { label: 'G médio do setor', value: fmtBI(result.GEff) },
+      { label: 'T médio do setor', value: fmtBI(result.TEff) },
+      { label: 'Déficit (G - T)',  value: fmtBI(result.deficit) },
     ];
     if (result.penaltyInfo?.penaltyApplied) {
-      detailRows.push({ label: 'Penalidade de deficit', value: `-${(result.penaltyInfo.penaltyRate * 100).toFixed(0)}% em c&#8320;` });
+      detailRows.push({ label: 'Penalidade de déficit', value: `-${(result.penaltyInfo.penaltyRate * 100).toFixed(0)}% em c&#8320;` });
     }
   }
 
@@ -724,9 +815,9 @@ function renderRoundResult(result, round) {
   // Métricas gerais
   document.getElementById('result-metrics').innerHTML = [
     { label: 'Multiplicador', value: `${result.multiplier?.toFixed(2)}x` },
-    { label: 'Renda disponivel', value: fmtBI(result.disposableIncome) },
-    { label: 'Poupanca privada', value: fmtBI(result.privateSavings) },
-    { label: 'Poupanca publica', value: fmtBI(result.publicSavings) },
+    { label: 'Renda disponível', value: fmtBI(result.disposableIncome) },
+    { label: 'Poupança privada', value: fmtBI(result.privateSavings) },
+    { label: 'Poupança pública', value: fmtBI(result.publicSavings) },
   ].map(m => `
     <div class="metric-card">
       <div class="metric-label">${m.label}</div>
@@ -792,8 +883,33 @@ function renderFinalResults(results) {
       <span class="sector-summary-value">Rod. ${minRound}: ${fmtBI(results[minRound].Y)}</span>
     </div>`;
 
+  // Renderizar Insígnias (Badges)
+  const badgesObj = computeBadges(results);
+  const myBadges = badgesObj[_sector] || [];
+  const collectiveBadges = badgesObj.coletivo || [];
+  const allMyBadges = [...myBadges, ...collectiveBadges];
+  const badgesCard = document.getElementById('final-badges-card');
+  const badgesContainer = document.getElementById('final-badges-container');
+  
+  if (badgesCard && badgesContainer) {
+    if (allMyBadges.length > 0) {
+      badgesCard.style.display = '';
+      badgesContainer.innerHTML = allMyBadges.map(badge => `
+        <div class="badge-item card" style="display:flex; align-items:center; gap:0.75rem; padding:0.75rem; background:var(--bg-600); margin:0">
+          <div style="font-size:1.75rem"><i class="ti ti-award text-gold"></i></div>
+          <div>
+            <div class="fw-700 text-green">${badge.name}</div>
+            <div class="text-xs text-300" style="margin:0">${badge.desc}</div>
+          </div>
+        </div>
+      `).join('');
+    } else {
+      badgesCard.style.display = 'none';
+    }
+  }
+
   // Resumo do setor do jogador
-  const sectorNames = { familias: 'Familias', empresas: 'Empresas', governo: 'Governo' };
+  const sectorNames = { familias: 'Famílias', empresas: 'Empresas', governo: 'Governo' };
   document.getElementById('final-sector-title').textContent =
     `Resumo: setor ${sectorNames[_sector] || ''}`;
 
@@ -807,7 +923,7 @@ function renderFinalResults(results) {
     } else if (_sector === 'empresas') {
       rows = [`I = ${fmtBI(res.IEff)}`];
     } else if (_sector === 'governo') {
-      rows = [`G = ${fmtBI(res.GEff)} | T = ${fmtBI(res.TEff)} | deficit = ${fmtBI(res.deficit)}`];
+      rows = [`G = ${fmtBI(res.GEff)} | T = ${fmtBI(res.TEff)} | déficit = ${fmtBI(res.deficit)}`];
     }
     return `<div class="insight-item"><span class="fw-700">Rod. ${r}:</span> ${rows.join(' | ')}</div>`;
   }).join('');
@@ -818,3 +934,461 @@ function renderFinalResults(results) {
     `<li class="insight-item"><i class="ti ti-info-circle"></i> ${i}</li>`
   ).join('') || `<li class="insight-item text-muted">Jogo concluido.</li>`;
 }
+
+// ── Funções de Gamificação (Passo a Passo, Personas, Huddle, etc.) ──────────────────
+
+let _currentStep = 1;
+let _selectedStance = null;
+let _selectedBet = null;
+let _selectedBetStake = 'seguro';
+let _lockedEarly = false;
+let _simpleMode = false;
+let _persona = null;
+let _offSubmissions = null;
+let _briefingShown = false;
+
+// Exibe o briefing da rodada e oculta o fluxo de decisao (estado inicial).
+function showBriefing() {
+  _briefingShown = false;
+  const briefing = document.getElementById('submit-briefing');
+  const flow     = document.getElementById('submit-flow');
+  if (briefing) briefing.style.display = '';
+  if (flow) flow.style.display = 'none';
+}
+
+// Inicia o fluxo de decisao de 3 passos a partir do briefing (onclick do CTA).
+function startDecisionFlow() {
+  _briefingShown = true;
+  const briefing = document.getElementById('submit-briefing');
+  const flow     = document.getElementById('submit-flow');
+  if (briefing) briefing.style.display = 'none';
+  if (flow) flow.style.display = '';
+  changeStep(1);
+  syncCustomControlsVisuals();
+}
+
+function changeStep(step) {
+  if (step < 1 || step > 3) return;
+
+  // Auto-selecionar dilema se o jogador tentar pular o Passo 1 sem escolha
+  if (step > 1 && !_selectedStance) {
+    const dilemmas = DILEMMAS[_config?.currentRound || 1]?.[_sector];
+    if (dilemmas && dilemmas.length > 0) {
+      selectDilemma(dilemmas[0].id);
+    }
+  }
+
+  _currentStep = step;
+
+  // Atualizar indicadores visuais
+  for (let i = 1; i <= 3; i++) {
+    const el = document.getElementById(`step-${i}-indicator`);
+    if (el) {
+      el.classList.toggle('active', i === step);
+      el.classList.toggle('completed', i < step);
+    }
+  }
+
+  // Exibir apenas o painel ativo
+  for (let i = 1; i <= 3; i++) {
+    const el = document.getElementById(`step-${i}-panel`);
+    if (el) el.style.display = i === step ? '' : 'none';
+  }
+
+  // Atualizar visuais no Passo 2
+  if (step === 2) {
+    syncCustomControlsVisuals();
+  }
+}
+
+function renderPersona() {
+  const displayEl = document.getElementById('player-persona-display');
+  if (displayEl) {
+    displayEl.textContent = _persona || 'Sorteando persona...';
+  }
+  const flowEl = document.getElementById('flow-persona-display');
+  if (flowEl) {
+    flowEl.textContent = _persona || '';
+  }
+  const inputEl = document.getElementById('persona-name-input');
+  if (inputEl) {
+    inputEl.value = _persona || '';
+  }
+}
+
+async function drawNewPersona() {
+  if (!_sector) return;
+  const sectorPersonas = PERSONAS[_sector];
+  const currentIdx = sectorPersonas.indexOf(_persona);
+  let newIdx = Math.floor(Math.random() * sectorPersonas.length);
+  if (newIdx === currentIdx && sectorPersonas.length > 1) {
+    newIdx = (newIdx + 1) % sectorPersonas.length;
+  }
+  const newPersona = sectorPersonas[newIdx];
+  _persona = newPersona;
+  renderPersona();
+  try {
+    await updatePlayerSector(_roomCode, _playerId, _sector, newPersona);
+  } catch (err) {
+    console.error('Erro ao atualizar persona:', err);
+  }
+}
+
+function togglePersonaEdit(edit) {
+  const displayMode = document.getElementById('persona-display-mode');
+  const editMode = document.getElementById('persona-edit-mode');
+  if (edit) {
+    displayMode.style.display = 'none';
+    editMode.style.display = 'flex';
+    document.getElementById('persona-name-input').focus();
+  } else {
+    displayMode.style.display = 'flex';
+    editMode.style.display = 'none';
+  }
+}
+
+async function savePersonaName() {
+  const newName = document.getElementById('persona-name-input').value.trim();
+  if (!newName) return;
+  _persona = newName;
+  renderPersona();
+  togglePersonaEdit(false);
+  try {
+    await updatePlayerSector(_roomCode, _playerId, _sector, newName);
+  } catch (err) {
+    console.error('Erro ao salvar nome da persona:', err);
+  }
+}
+
+function renderDilemmas(round) {
+  const container = document.getElementById('dilemmas-container');
+  if (!container || !_sector) return;
+
+  const dilemmas = DILEMMAS[round]?.[_sector] || [];
+  container.innerHTML = dilemmas.map(d => {
+    const isSelected = _selectedStance === d.id;
+    return `
+      <div class="card dilemma-card ${isSelected ? 'selected' : ''}" id="dilemma-${d.id}" onclick="selectDilemma('${d.id}')" style="cursor:pointer; padding:1rem; border:1px solid ${isSelected ? 'var(--green)' : 'var(--border)'}">
+        <div style="display:flex; justify-content:space-between; align-items:center" class="mb-2">
+          <div class="fw-700 text-green text-sm">${d.title}</div>
+          <span class="badge badge-muted text-xs">${d.badge}</span>
+        </div>
+        <p class="text-sm text-300" style="margin:0">${d.flavor}</p>
+      </div>
+    `;
+  }).join('');
+}
+
+// Fatores de conversao entre unidades do modelo e unidades do slider de cada
+// parametro (c1 em %, c0 em R$/mes) e o passo de cada slider.
+const SLIDER_UNIT = { c1: 100, c0: 50, I: 1, G: 1, T: 1 };
+const SLIDER_STEP = { c1: 1, c0: 50, I: 1, G: 1, T: 1 };
+
+// Restringe a faixa de um slider a uma banda em torno do valor central da
+// postura escolhida, intersectada com os limites da rodada. O slider passa a
+// so permitir valores coerentes com a postura (em vez do range completo).
+function applyStanceRange(param, centerModel) {
+  const band = STANCE_BANDS[param];
+  const lim = _limits?.[param] || {};
+  const limMin = lim.min != null ? lim.min : centerModel - band;
+  const limMax = lim.max != null ? lim.max : centerModel + band;
+
+  let loModel = Math.max(limMin, centerModel - band);
+  let hiModel = Math.min(limMax, centerModel + band);
+  // Guarda contra faixa invertida (postura fora dos limites da rodada).
+  if (loModel > hiModel) { loModel = limMin; hiModel = limMax; }
+
+  const center = clamp(centerModel, loModel, hiModel);
+  const u = SLIDER_UNIT[param];
+  setSlider(param, loModel * u, hiModel * u, center * u, SLIDER_STEP[param]);
+}
+
+function selectDilemma(id) {
+  _selectedStance = id;
+  const dilemmas = DILEMMAS[_config?.currentRound || 1]?.[_sector] || [];
+  dilemmas.forEach(d => {
+    const card = document.getElementById(`dilemma-${d.id}`);
+    if (card) {
+      const isSel = d.id === id;
+      card.classList.toggle('selected', isSel);
+      card.style.borderColor = isSel ? 'var(--green)' : 'var(--border)';
+    }
+  });
+
+  const currentDilemma = dilemmas.find(d => d.id === id);
+  if (currentDilemma && currentDilemma.presets) {
+    const presets = currentDilemma.presets;
+    if (_sector === 'familias') {
+      if (presets.c1 !== undefined) applyStanceRange('c1', presets.c1);
+      if (presets.c0 !== undefined) applyStanceRange('c0', presets.c0);
+    } else if (_sector === 'empresas') {
+      let val = presets.I;
+      if (val === 'max') val = _limits.I.max;
+      applyStanceRange('I', val);
+    } else if (_sector === 'governo') {
+      if (presets.G !== undefined) applyStanceRange('G', presets.G);
+      if (presets.T !== undefined) applyStanceRange('T', presets.T);
+    }
+  }
+}
+
+function adjustC0(delta) {
+  if (_lockedEarly) return;
+  const slider = document.getElementById('slider-c0');
+  if (!slider) return;
+  const min = parseInt(slider.min);
+  const max = parseInt(slider.max);
+  const currentVal = parseInt(slider.value);
+  const newVal = clamp(currentVal + delta, min, max);
+  slider.value = newVal;
+  
+  const simpleSlider = document.getElementById('slider-c0-simple');
+  if (simpleSlider) simpleSlider.value = newVal;
+
+  updateSlider('c0', newVal);
+}
+
+function toggleSimpleMode(enabled) {
+  _simpleMode = enabled;
+  const custom = document.getElementById('custom-controls-container');
+  const simple = document.getElementById('simple-sliders-container');
+  if (custom) custom.style.display = enabled ? 'none' : '';
+  if (simple) simple.style.display = enabled ? '' : 'none';
+  if (!enabled) {
+    syncCustomControlsVisuals();
+  }
+}
+
+function syncSimpleSlider(param, value) {
+  updateSlider(param, value);
+}
+
+function syncCustomControlsVisuals() {
+  if (!_sector) return;
+  const round = _config?.currentRound || 1;
+
+  if (_sector === 'familias') {
+    const c1El = document.getElementById('slider-c1');
+    const c0El = document.getElementById('slider-c0');
+    if (!c1El || !c0El) return;
+    const c1 = parseFloat(c1El.value);
+    const c0 = parseFloat(c0El.value);
+
+    // c1 split bar
+    const customValC1 = document.getElementById('custom-val-c1');
+    if (customValC1) customValC1.textContent = c1.toFixed(0) + '%';
+    const splitGastar = document.getElementById('split-val-gastar');
+    if (splitGastar) splitGastar.textContent = c1.toFixed(0);
+    const splitPoupar = document.getElementById('split-val-poupar');
+    if (splitPoupar) splitPoupar.textContent = (100 - c1).toFixed(0);
+    
+    const fillG = document.getElementById('split-fill-gastar');
+    const fillP = document.getElementById('split-fill-poupar');
+    if (fillG) fillG.style.width = c1 + '%';
+    if (fillP) fillP.style.width = (100 - c1) + '%';
+
+    // c0 stepper
+    const customValC0 = document.getElementById('custom-val-c0');
+    if (customValC0) customValC0.textContent = fmtSliderVal('c0', c0);
+    const stepperDisplay = document.getElementById('stepper-c0-display');
+    if (stepperDisplay) stepperDisplay.textContent = 'R$ ' + c0.toLocaleString('pt-BR');
+    const stepperBi = document.getElementById('stepper-c0-bi');
+    if (stepperBi) stepperBi.textContent = Math.round(c0 / 50);
+  }
+
+  if (_sector === 'empresas') {
+    const iEl = document.getElementById('slider-I');
+    if (!iEl) return;
+    const I = parseFloat(iEl.value);
+
+    const customValI = document.getElementById('custom-val-I');
+    if (customValI) customValI.textContent = I.toFixed(0);
+  }
+
+  if (_sector === 'governo') {
+    const gEl = document.getElementById('slider-G');
+    const tEl = document.getElementById('slider-T');
+    if (!gEl || !tEl) return;
+    const G = parseFloat(gEl.value);
+    const T = parseFloat(tEl.value);
+    const min = parseFloat(gEl.min);
+    const max = parseFloat(gEl.max);
+
+    const fillValG = document.getElementById('budget-fill-val-G');
+    const fillValT = document.getElementById('budget-fill-val-T');
+    if (fillValG) fillValG.textContent = G.toFixed(0);
+    if (fillValT) fillValT.textContent = T.toFixed(0);
+
+    const pctG = (G - min) / (Math.max(1, max - min)) * 100;
+    const pctT = (T - min) / (Math.max(1, max - min)) * 100;
+    const fillG = document.getElementById('budget-fill-G');
+    const fillT = document.getElementById('budget-fill-T');
+    if (fillG) fillG.style.height = pctG + '%';
+    if (fillT) fillT.style.height = pctT + '%';
+
+    const gap = G - T;
+    const gapInd = document.getElementById('budget-gap-indicator');
+    if (gapInd) {
+      if (gap > 0) {
+        gapInd.textContent = `Déficit: R$ ${gap.toFixed(0)}bi`;
+        const threshold = ROUND_EVENTS[round].deficitThreshold;
+        gapInd.className = 'badge ' + (gap > threshold ? 'badge-red' : 'badge-gold');
+      } else if (gap < 0) {
+        gapInd.textContent = `Superávit: R$ ${Math.abs(gap).toFixed(0)}bi`;
+        gapInd.className = 'badge badge-green';
+      } else {
+        gapInd.textContent = 'Equilibrado';
+        gapInd.className = 'badge badge-muted';
+      }
+    }
+  }
+}
+
+function setBet(bet) {
+  if (_lockedEarly) return;
+  // Toque novamente na mesma opcao para cancelar a aposta (sem risco)
+  _selectedBet = (bet && bet === _selectedBet) ? null : bet;
+
+  const btnSim = document.getElementById('btn-bet-sim');
+  const btnNao = document.getElementById('btn-bet-nao');
+  if (btnSim && btnNao) {
+    btnSim.classList.toggle('btn-primary', _selectedBet === 'sim');
+    btnSim.classList.toggle('btn-secondary', _selectedBet !== 'sim');
+    btnNao.classList.toggle('btn-danger', _selectedBet === 'nao');
+    btnNao.classList.toggle('btn-secondary', _selectedBet !== 'nao');
+  }
+
+  // O nivel de confianca so aparece quando ha uma direcao escolhida
+  const stakeRow = document.getElementById('bet-stake-row');
+  if (stakeRow) stakeRow.style.display = _selectedBet ? '' : 'none';
+  setBetStake(_selectedBet ? _selectedBetStake : null);
+}
+
+function setBetStake(stake) {
+  if (_lockedEarly) return;
+  if (stake) _selectedBetStake = stake;
+
+  const active = (s) => _selectedBet && _selectedBetStake === s;
+  const btnSeguro = document.getElementById('btn-stake-seguro');
+  const btnOusado = document.getElementById('btn-stake-ousado');
+  if (btnSeguro && btnOusado) {
+    btnSeguro.classList.toggle('btn-primary', active('seguro'));
+    btnSeguro.classList.toggle('btn-secondary', !active('seguro'));
+    btnOusado.classList.toggle('btn-primary', active('ousado'));
+    btnOusado.classList.toggle('btn-secondary', !active('ousado'));
+  }
+}
+
+async function lockDecisionEarly() {
+  const endsAt = _config?.roundEndsAt;
+  if (!endsAt) return;
+
+  const secondsLeft = Math.round((endsAt - Date.now()) / 1000);
+  const early = secondsLeft >= 15;
+
+  _lockedEarly = true;
+  disableSubmissionControls();
+
+  const values = readCurrentValues();
+  const round = _config?.currentRound;
+  const btn = document.getElementById('btn-lock-decision');
+  setLoading(btn, true);
+
+  try {
+    await submitRoundValues(_roomCode, round, _playerId, values, _selectedStance, _selectedBet, early, _selectedBetStake);
+    _lastSubmission = values;
+    showView('view-submitted');
+    renderSubmittedSummary(values);
+  } catch (err) {
+    console.error(err);
+    _lockedEarly = false;
+    enableSubmissionControls();
+    const errEl = document.getElementById('submit-error');
+    if (errEl) {
+      errEl.textContent = 'Erro ao travar. Tente novamente.';
+      errEl.classList.add('show');
+    }
+  } finally {
+    setLoading(btn, false);
+  }
+}
+
+function disableSubmissionControls() {
+  document.querySelectorAll('#view-submit input[type="range"]').forEach(input => input.disabled = true);
+  document.querySelectorAll('#view-submit button').forEach(btn => {
+    if (btn.id !== 'btn-lock-decision' && btn.id !== 'btn-submit') {
+      btn.disabled = true;
+    }
+  });
+  const check = document.getElementById('toggle-simple-mode');
+  if (check) check.disabled = true;
+}
+
+function enableSubmissionControls() {
+  document.querySelectorAll('#view-submit input[type="range"]').forEach(input => input.disabled = false);
+  document.querySelectorAll('#view-submit button').forEach(btn => btn.disabled = false);
+  const check = document.getElementById('toggle-simple-mode');
+  if (check) check.disabled = false;
+}
+
+function startHuddleListener(round) {
+  if (_offSubmissions) _offSubmissions();
+
+  const huddleVal   = document.getElementById('huddle-val');
+  const huddleFill  = document.getElementById('huddle-fill');
+  const huddleNeedle = document.getElementById('huddle-needle');
+  const huddleHint  = document.getElementById('huddle-hint');
+
+  if (!huddleVal || !_sector) return;
+
+  _offSubmissions = onSubmissionsChange(_roomCode, round, subs => {
+    const sectorPlayerIds = Object.entries(_players || {})
+      .filter(([, p]) => p.sector === _sector)
+      .map(([id]) => id);
+
+    const sectorSubs = sectorPlayerIds
+      .map(id => subs[id]?.values)
+      .filter(Boolean);
+
+    if (sectorSubs.length === 0) {
+      huddleVal.textContent = '-';
+      if (huddleFill) huddleFill.style.width = '0%';
+      if (huddleNeedle) huddleNeedle.style.display = 'none';
+      if (huddleHint) huddleHint.textContent = 'Ninguém enviou ainda no seu setor. Seja o primeiro!';
+      return;
+    }
+
+    let avg = 0;
+    let label = '';
+    let pct = 0;
+
+    if (_sector === 'familias') {
+      const sumC1 = sectorSubs.reduce((acc, v) => acc + v.c1 * 100, 0);
+      avg = sumC1 / sectorSubs.length;
+      label = `c1 médio: ${avg.toFixed(0)}%`;
+      pct = (avg - 10) / (95 - 10);
+    } else if (_sector === 'empresas') {
+      const sumI = sectorSubs.reduce((acc, v) => acc + v.I, 0);
+      avg = sumI / sectorSubs.length;
+      label = `I médio: R$ ${avg.toFixed(0)}bi`;
+      const iMax = _limits?.I?.max || 200;
+      pct = (avg - 10) / (iMax - 10);
+    } else if (_sector === 'governo') {
+      const sumG = sectorSubs.reduce((acc, v) => acc + v.G, 0);
+      avg = sumG / sectorSubs.length;
+      label = `G médio: R$ ${avg.toFixed(0)}bi`;
+      pct = (avg - 20) / (200 - 20);
+    }
+
+    huddleVal.textContent = label;
+    if (huddleFill) huddleFill.style.width = (pct * 100) + '%';
+    if (huddleNeedle) {
+      huddleNeedle.style.left = (pct * 100) + '%';
+      huddleNeedle.style.display = '';
+    }
+    if (huddleHint) {
+      huddleHint.textContent = `${sectorSubs.length} de ${sectorPlayerIds.length} colegas enviaram no seu setor.`;
+    }
+  });
+}
+

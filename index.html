@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Tres Setores, Uma Economia</title>
+  <title>Três Setores, Uma Economia</title>
   <link rel="stylesheet" href="css/style.css">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css">
 </head>
@@ -13,7 +13,7 @@
   <div class="container">
     <div class="page-header">
       <div class="logo-mark">EACH-USP | Macroeconomia</div>
-      <h1>Tres Setores,<br>Uma Economia</h1>
+      <h1>Três Setores,<br>Uma Economia</h1>
       <p class="mt-2">Jogo educativo em tempo real sobre o modelo keynesiano</p>
     </div>
 
@@ -33,7 +33,7 @@
         <h3 class="mb-4">Entrar como jogador</h3>
 
         <div class="form-group">
-          <label for="input-room-code">Codigo da sala</label>
+          <label for="input-room-code">Código da sala</label>
           <input
             type="text"
             id="input-room-code"
@@ -66,7 +66,7 @@
       </div>
 
       <p class="text-sm text-muted text-center mt-4">
-        O codigo de 4 letras esta no telao da sala de aula.
+        O código de 4 letras está no telão da sala de aula.
       </p>
     </div>
 
@@ -76,7 +76,7 @@
         <h3 class="mb-4">Criar sala (modo mestre)</h3>
 
         <div class="form-group">
-          <label for="input-master-key">Senha do mestre (4 digitos)</label>
+          <label for="input-master-key">Senha do mestre (4 dígitos)</label>
           <input
             type="password"
             id="input-master-key"
@@ -86,7 +86,7 @@
             autocomplete="new-password"
           >
           <p class="text-sm text-muted mt-2">
-            Anote essa senha. Voce precisara dela para acessar a tela do mestre.
+            Anote essa senha. Você precisará dela para acessar a tela do mestre.
           </p>
         </div>
 
@@ -99,7 +99,7 @@
       </div>
 
       <p class="text-sm text-muted text-center mt-4">
-        Apos criar, voce sera redirecionado para a tela do mestre.
+        Após criar, você será redirecionado para a tela do mestre.
       </p>
     </div>
   </div>
@@ -175,7 +175,7 @@ async function joinRoom() {
 
   // Validações locais
   if (code.length !== 4 || !/^[A-Z]{4}$/.test(code)) {
-    showError('join-error', 'O codigo da sala deve ter 4 letras.');
+    showError('join-error', 'O código da sala deve ter 4 letras.');
     codeInput.focus();
     return;
   }
@@ -192,14 +192,14 @@ async function joinRoom() {
     // Verificar se sala existe
     const exists = await roomExists(code);
     if (!exists) {
-      showError('join-error', 'Sala nao encontrada. Verifique o codigo.');
+      showError('join-error', 'Sala não encontrada. Verifique o código.');
       return;
     }
 
     // Verificar se ainda está em lobby
     const config = await getRoom(code);
     if (!config || (config.status !== 'lobby')) {
-      showError('join-error', 'Esta sala nao esta aceitando novos jogadores.');
+      showError('join-error', 'Esta sala não está aceitando novos jogadores.');
       return;
     }
 
@@ -233,7 +233,7 @@ async function handleCreateRoom() {
   const masterKey = keyInput.value.trim();
 
   if (!/^\d{4}$/.test(masterKey)) {
-    showError('create-error', 'A senha deve ter exatamente 4 digitos numericos.');
+    showError('create-error', 'A senha deve ter exatamente 4 dígitos numéricos.');
     keyInput.focus();
     return;
   }
@@ -289,7 +289,7 @@ document.getElementById('input-master-key').addEventListener('keydown', e => {
 
 onConnectionChange(connected => {
   document.getElementById('conn-dot').className   = 'conn-dot' + (connected ? ' connected' : '');
-  document.getElementById('conn-label').textContent = connected ? 'Conectado' : 'Sem conexao';
+  document.getElementById('conn-label').textContent = connected ? 'Conectado' : 'Sem conexão';
 });
 </script>
 </body>

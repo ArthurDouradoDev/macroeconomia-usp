@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Mestre | Tres Setores</title>
+  <title>Mestre | Três Setores</title>
   <link rel="stylesheet" href="css/style.css">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css">
 </head>
@@ -19,12 +19,12 @@
       <div class="page-header">
         <div class="logo-mark">EACH-USP | Modo Mestre</div>
         <h1>Tela do Mestre</h1>
-        <p class="mt-2">Digite o codigo da sala e sua senha para continuar.</p>
+        <p class="mt-2">Digite o código da sala e sua senha para continuar.</p>
       </div>
 
       <div class="card">
         <div class="form-group">
-          <label for="m-room-code">Codigo da sala</label>
+          <label for="m-room-code">Código da sala</label>
           <input type="text" id="m-room-code" class="input-code" placeholder="ABCD"
             maxlength="4" autocapitalize="characters" autocomplete="off" spellcheck="false">
         </div>
@@ -49,11 +49,11 @@
         <h2>Lobby</h2>
       </div>
 
-      <!-- Codigo grande para projeção -->
+      <!-- Código grande para projeção -->
       <div class="room-code-display mb-6">
-        <div class="room-code-label">Codigo de acesso</div>
+        <div class="room-code-label">Código de acesso</div>
         <div class="room-code-value" id="lobby-code-big"></div>
-        <p class="text-sm text-muted mt-2">Peça aos alunos que acessem o site e digitem esse codigo</p>
+        <p class="text-sm text-muted mt-2">Peça aos alunos que acessem o site e digitem esse código</p>
       </div>
 
       <!-- Contadores de setores -->
@@ -62,7 +62,7 @@
           <div class="sector-card-top">
             <div class="sector-card-icon familias"><i class="ti ti-home"></i></div>
             <div>
-              <div class="fw-700">Familias</div>
+              <div class="fw-700">Famílias</div>
               <div class="text-sm text-muted">c&#8321; e c&#8320;</div>
             </div>
           </div>
@@ -102,10 +102,10 @@
       <!-- Duração total da dinâmica -->
       <div class="card mb-4">
         <div class="slider-header">
-          <span class="slider-label">Duracao total da dinamica</span>
+          <span class="slider-label">Duração total da dinâmica</span>
           <span class="slider-value mono text-gold" id="val-duration">15 min</span>
         </div>
-        <p class="slider-help">Define automaticamente o tempo de submissao e de revelacao de cada rodada.</p>
+        <p class="slider-help">Define automaticamente o tempo de submissão e de revelação de cada rodada.</p>
         <input type="range" id="slider-duration" min="10" max="20" step="1" value="15"
           oninput="onDurationInput(this.value)">
         <div class="slider-limits"><span>10 min</span><span>20 min</span></div>
@@ -142,7 +142,7 @@
 
       <!-- Contadores de submissão -->
       <div class="card mb-4">
-        <h4 class="mb-3">Submissoes em tempo real</h4>
+        <h4 class="mb-3">Submissões em tempo real</h4>
         <div class="submission-counts" id="submission-counts"></div>
       </div>
 
@@ -156,13 +156,13 @@
          ════════════════════════════════════════════════════════ -->
     <div id="view-reveal" class="view">
 
-      <!-- Controles de revelacao -->
+      <!-- Controles de revelação -->
       <div class="reveal-controls">
         <button class="btn btn-secondary btn-sm btn-inline" id="btn-toggle-mode" onclick="toggleRevealMode()">
           <i class="ti ti-hand-click"></i> Manual
         </button>
         <button class="btn btn-primary btn-sm btn-inline" id="btn-next-phase" onclick="manualNextPhase()">
-          <i class="ti ti-arrow-right"></i> Proximo
+          <i class="ti ti-arrow-right"></i> Próximo
         </button>
         <button class="btn btn-secondary btn-sm btn-inline" onclick="skipToResult()">
           <i class="ti ti-fast-forward"></i> Pular
@@ -171,7 +171,7 @@
 
       <!-- Progresso das fases -->
       <div class="phase-progress-wrap">
-        <div class="phase-progress-label">Etapa da revelacao</div>
+        <div class="phase-progress-label">Etapa da revelação</div>
         <div class="phase-progress" id="phase-progress"></div>
       </div>
 
@@ -191,10 +191,10 @@
         </div>
       </div>
 
-      <!-- Fase 3: Montando a equacao -->
+      <!-- Fase 3: Montando a equação -->
       <div class="calc-phase" id="phase-3">
         <div class="card">
-          <h3 class="mb-4 text-gold">Montando a equacao...</h3>
+          <h3 class="mb-4 text-gold">Montando a equação...</h3>
           <div class="equation-display" id="phase3-equation"></div>
         </div>
       </div>
@@ -211,7 +211,7 @@
       <!-- Fase 5: Gasto autonomo -->
       <div class="calc-phase" id="phase-5">
         <div class="card">
-          <h3 class="mb-4 text-gold">Calculando o gasto autonomo...</h3>
+          <h3 class="mb-4 text-gold">Calculando o gasto autônomo...</h3>
           <div class="equation-display" id="phase5-auto"></div>
         </div>
       </div>
@@ -223,17 +223,17 @@
           <div class="result-pib">
             <div class="result-pib-label">PIB de Equilibrio</div>
             <div class="result-pib-value" id="phase6-Y">0</div>
-            <div class="result-pib-unit">bilhoes de reais</div>
+            <div class="result-pib-unit">bilhões de reais</div>
           </div>
           <div class="metrics-grid metrics-grid-4 mt-4" id="phase6-metrics"></div>
           <div class="is-verify mt-4" id="phase6-is"></div>
         </div>
       </div>
 
-      <!-- Fase 7: Pontuacao da rodada e ranking -->
+      <!-- Fase 7: Pontuação da rodada e ranking -->
       <div class="calc-phase" id="phase-7">
         <div class="card mb-4">
-          <h3 class="mb-3 text-gold">Pontuacao da rodada</h3>
+          <h3 class="mb-3 text-gold">Pontuação da rodada</h3>
 
           <!-- Meta de PIB / bonus coletivo -->
           <div id="score-target" class="mb-4"></div>
@@ -272,7 +272,7 @@
         <!-- Botao para avançar -->
         <button class="btn btn-primary" id="btn-advance" onclick="advanceGame()">
           <i class="ti ti-arrow-right"></i>
-          <span id="btn-advance-label">Avancar para Rodada 2</span>
+          <span id="btn-advance-label">Avançar para Rodada 2</span>
         </button>
       </div>
     </div>
@@ -288,14 +288,14 @@
 
       <!-- Ranking final dos setores -->
       <div class="card mb-4">
-        <h4 class="mb-3">Classificacao final dos setores</h4>
+        <h4 class="mb-3">Classificação final dos setores</h4>
         <div id="final-winner" class="winner-banner mb-3"></div>
         <div id="final-leaderboard" class="leaderboard"></div>
       </div>
 
       <!-- Grafico de barras -->
       <div class="card mb-4">
-        <h4 class="mb-2">Evolucao do PIB</h4>
+        <h4 class="mb-2">Evolução do PIB</h4>
         <div class="bar-chart" id="final-bar-chart"></div>
       </div>
 
@@ -311,9 +311,15 @@
         <ul class="insight-list" id="final-insights"></ul>
       </div>
 
+      <!-- Conquistas da Economia -->
+      <div class="card mb-4" id="final-badges-card" style="display:none">
+        <h4 class="mb-3"><i class="ti ti-award text-gold"></i> Conquistas e Insígnias dos Setores</h4>
+        <div id="final-badges-container" style="display:grid; grid-template-columns:repeat(auto-fit, minmax(200px, 1fr)); gap:0.75rem"></div>
+      </div>
+
       <!-- Verificacao IS -->
       <div class="card mb-4">
-        <h4 class="mb-3">Relacao IS por rodada</h4>
+        <h4 class="mb-3">Relação IS por rodada</h4>
         <div id="final-is-checks"></div>
       </div>
 
@@ -331,7 +337,7 @@
         <h2 class="mt-4">Sala encerrada</h2>
         <p class="mt-2">O jogo foi encerrado com sucesso. Obrigado!</p>
         <a href="index.html" class="btn btn-secondary btn-inline mt-6">
-          <i class="ti ti-home"></i> Voltar ao inicio
+          <i class="ti ti-home"></i> Voltar ao início
         </a>
       </div>
     </div>
@@ -344,7 +350,7 @@
   <div class="confirm-box">
     <div class="confirm-title">Fechar rodada?</div>
     <div class="confirm-desc" id="confirm-close-desc">
-      Jogadores que nao enviaram usarao os valores padrao. Esta acao nao pode ser desfeita.
+      Jogadores que não enviaram usarão os valores padrão. Esta ação não pode ser desfeita.
     </div>
     <div class="confirm-actions">
       <button class="btn btn-secondary" onclick="hideConfirm('confirm-close')">Cancelar</button>
@@ -358,7 +364,7 @@
   <div class="confirm-box">
     <div class="confirm-title">Encerrar a sala?</div>
     <div class="confirm-desc">
-      Isso impedira qualquer nova acao na sala. Use apos a aula.
+      Isso impedirá qualquer nova ação na sala. Use após a aula.
     </div>
     <div class="confirm-actions">
       <button class="btn btn-secondary" onclick="hideConfirm('confirm-end')">Cancelar</button>

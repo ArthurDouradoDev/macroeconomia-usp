@@ -102,9 +102,11 @@ async function addPlayer(roomCode, playerId, name) {
   });
 }
 
-// Atualiza o setor escolhido pelo jogador
-async function updatePlayerSector(roomCode, playerId, sector) {
-  await _playerRef(roomCode, playerId).update({ sector });
+// Atualiza o setor escolhido pelo jogador e sua persona
+async function updatePlayerSector(roomCode, playerId, sector, persona) {
+  const update = { sector };
+  if (persona) update.persona = persona;
+  await _playerRef(roomCode, playerId).update(update);
 }
 
 // Lê todos os jogadores da sala
@@ -115,12 +117,18 @@ async function getPlayers(roomCode) {
 
 // ── Submissões ────────────────────────────────────────────────
 
-// Salva os valores submetidos por um jogador em uma rodada
-async function submitRoundValues(roomCode, round, playerId, values) {
-  await _playerSubmissionRef(roomCode, round, playerId).set({
+// Salva os valores submetidos por um jogador em uma rodada com dados da gamificação
+async function submitRoundValues(roomCode, round, playerId, values, stance, bet, lockedEarly, betStake) {
+  const data = {
     values,
     submittedAt: firebase.database.ServerValue.TIMESTAMP
-  });
+  };
+  if (stance !== undefined) data.stance = stance;
+  if (bet !== undefined) data.bet = bet;
+  if (lockedEarly !== undefined) data.lockedEarly = lockedEarly;
+  // betStake so faz sentido se houver aposta; evita lixo no schema
+  if (bet && betStake) data.betStake = betStake;
+  await _playerSubmissionRef(roomCode, round, playerId).set(data);
 }
 
 // Lê todas as submissões de uma rodada

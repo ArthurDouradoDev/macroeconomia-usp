@@ -8,7 +8,7 @@
 const ROUND_EVENTS = {
   1: {
     name: 'Economia Normal',
-    description: 'A economia está funcionando normalmente. Nao ha choques externos. Escolham seus parametros livremente.',
+    description: 'A economia está funcionando normalmente. Não há choques externos. Escolham seus parâmetros livremente.',
     deficitThreshold: 50,
     deficitPenalty: 0.10,
     limits: {
@@ -25,8 +25,8 @@ const ROUND_EVENTS = {
     }
   },
   2: {
-    name: 'Crise de Confianca',
-    description: 'Uma crise financeira internacional abalou a confianca. As familias estao inseguras e as empresas cortam investimentos. O governo precisa decidir: intervem ou espera?',
+    name: 'Crise de Confiança',
+    description: 'Uma crise financeira internacional abalou a confiança. As famílias estão inseguras e as empresas cortam investimentos. O governo precisa decidir: intervém ou espera?',
     deficitThreshold: 50,
     deficitPenalty: 0.10,
     limits: {
@@ -42,8 +42,8 @@ const ROUND_EVENTS = {
     }
   },
   3: {
-    name: 'Recuperacao com Dilema',
-    description: 'A confianca esta voltando, mas o mercado esta de olho no deficit publico. Se o governo gastar demais agora, a credibilidade desaba. As familias e empresas tem mais liberdade, mas sera que a poupanca da rodada anterior permite?',
+    name: 'Recuperação com Dilema',
+    description: 'A confiança está voltando, mas o mercado está de olho no déficit público. Se o governo gastar demais agora, a credibilidade desaba. As famílias e empresas têm mais liberdade, mas será que a poupança da rodada anterior permite?',
     deficitThreshold: 30,   // limiar mais severo
     deficitPenalty: 0.15,   // penalidade maior
     limits: {
@@ -60,24 +60,98 @@ const ROUND_EVENTS = {
   }
 };
 
+// Dilemas por rodada e setor que preenchem presets de valores e salvam stance
+const DILEMMAS = {
+  1: {
+    familias: [
+      { id: 'equilibrada', title: 'Vida Equilibrada', flavor: 'Manter consumo e poupança normais.', badge: 'c1 ~ 0.70', presets: { c1: 0.70, c0: 50 } },
+      { id: 'poupadora', title: 'Foco na Poupança', flavor: 'Reduzir gastos correntes para poupar.', badge: 'c1 ~ 0.40', presets: { c1: 0.40, c0: 30 } },
+      { id: 'gastadora', title: 'Foco no Consumo', flavor: 'Gastar mais para melhorar padrão de vida.', badge: 'c1 ~ 0.90', presets: { c1: 0.90, c0: 80 } }
+    ],
+    empresas: [
+      { id: 'moderada', title: 'Postura Moderada', flavor: 'Investimento padrão para manter o crescimento.', badge: 'I ~ 80', presets: { I: 80 } },
+      { id: 'cautelosa', title: 'Postura Cautelosa', flavor: 'Reduzir investimentos para evitar riscos.', badge: 'I ~ 30', presets: { I: 30 } },
+      { id: 'agressiva', title: 'Postura Agressiva', flavor: 'Apostar alto no crescimento acelerado.', badge: 'I ~ 150', presets: { I: 150 } }
+    ],
+    governo: [
+      { id: 'neutra', title: 'Postura Neutra', flavor: 'Equilibrar gastos e cobrança de impostos.', badge: 'G ~ 100, T ~ 100', presets: { G: 100, T: 100 } },
+      { id: 'austera', title: 'Austeridade Fiscal', flavor: 'Reduzir o Estado para conter dívidas.', badge: 'G ~ 60, T ~ 120', presets: { G: 60, T: 120 } },
+      { id: 'expansionista', title: 'Estímulo Econômico', flavor: 'Aumentar gastos para aquecer o PIB.', badge: 'G ~ 160, T ~ 80', presets: { G: 160, T: 80 } }
+    ]
+  },
+  2: {
+    familias: [
+      { id: 'apertar_cinto', title: 'Apertar o Cinto', flavor: 'Proteger a família reduzindo consumo na crise.', badge: 'c1 ~ 0.45', presets: { c1: 0.45, c0: 20 } },
+      { id: 'manter_padrao', title: 'Manter o Padrão', flavor: 'Manter consumo apostando na recuperação.', badge: 'c1 ~ 0.80', presets: { c1: 0.80, c0: 50 } }
+    ],
+    empresas: [
+      { id: 'segurar_caixa', title: 'Segurar Caixa', flavor: 'Cortar investimentos para sobreviver à crise.', badge: 'I ~ 30', presets: { I: 30 } },
+      { id: 'investir_baixa', title: 'Investir na Baixa', flavor: 'Aproveitar a crise para expandir e ganhar mercado.', badge: 'I ~ 90', presets: { I: 90 } }
+    ],
+    governo: [
+      { id: 'austeridade', title: 'Austeridade na Crise', flavor: 'Reduzir gastos p/ proteger as contas do Estado.', badge: 'G ~ 60, T ~ 100', presets: { G: 60, T: 100 } },
+      { id: 'pacote_estimulo', title: 'Pacote de Estímulo', flavor: 'Gastar muito para evitar recessão profunda.', badge: 'G ~ 150, T ~ 70', presets: { G: 150, T: 70 } }
+    ]
+  },
+  3: {
+    familias: [
+      { id: 'reconstruir_poupanca', title: 'Reconstruir Poupança', flavor: 'Poupar mais p/ financiar novos investimentos.', badge: 'c1 ~ 0.50', presets: { c1: 0.50, c0: 40 } },
+      { id: 'voltar_consumir', title: 'Voltar a Consumir', flavor: 'Retomar compras e recuperar o bem-estar.', badge: 'c1 ~ 0.85', presets: { c1: 0.85, c0: 70 } }
+    ],
+    empresas: [
+      { id: 'jogar_seguro', title: 'Jogar Seguro', flavor: 'Evitar superendividamento com investimento moderado.', badge: 'I ~ 60', presets: { I: 60 } },
+      { id: 'aproveitar_janela', title: 'Aproveitar a Janela', flavor: 'Investir o teto máximo permitido pela poupança.', badge: 'I perto do teto', presets: { I: 'max' } }
+    ],
+    governo: [
+      { id: 'austeridade_severa', title: 'Austeridade Severa', flavor: 'Evitar penalidade grave com orçamento controlado.', badge: 'G ~ 50, T ~ 120', presets: { G: 50, T: 120 } },
+      { id: 'estimulo_limiar', title: 'Estímulo no Limiar', flavor: 'Estimular sem estourar a nova meta de déficit.', badge: 'G ~ 110, T ~ 90', presets: { G: 110, T: 90 } }
+    ]
+  }
+};
+
+// Personas leves por setor para criar vinculo de identidade
+const PERSONAS = {
+  familias: [
+    'Família Souza, periferia',
+    'Família Tanaka, classe média',
+    'Família Oliveira, rural',
+    'Família Santos, assalariados',
+    'Família Pereira, servidores públicos'
+  ],
+  empresas: [
+    'Metalúrgica Andrade',
+    'Startup Bit7',
+    'Supermercados Pague Pouco',
+    'Construtora Alfa',
+    'Agropecuária Vale Verde'
+  ],
+  governo: [
+    'Ministra do Planejamento',
+    'Secretário do Tesouro',
+    'Diretor do Banco Central',
+    'Ministro da Fazenda',
+    'Secretária do Orçamento'
+  ]
+};
+
 // Missões de cada setor (mostradas ao jogador na tela de submissão).
 // Cada setor pontua por cumprir seu objetivo proprio. Os objetivos sao
 // parcialmente conflitantes de proposito: e a licao central de macro.
 const SECTOR_MISSIONS = {
   familias: {
-    title: 'Missao: Bem-estar',
-    objective: 'Maximizar o consumo das familias.',
-    tip: 'Consumir mais aquece a economia, mas gastar alem da renda (poupanca privada negativa) zera o seu esforco.'
+    title: 'Missão: Bem-estar',
+    objective: 'Maximizar o consumo das famílias.',
+    tip: 'Consumir mais aquece a economia, mas gastar além da renda (poupança privada negativa) zera o seu esforço.'
   },
   empresas: {
-    title: 'Missao: Crescimento',
+    title: 'Missão: Crescimento',
     objective: 'Manter a economia aquecida (PIB alto) investindo com ousadia.',
     tip: 'Quanto maior o PIB, melhor. Investir perto do limite rende bônus, mas depender de uma economia descapitalizada penaliza.'
   },
   governo: {
-    title: 'Missao: Equilibrio',
+    title: 'Missão: Equilíbrio',
     objective: 'Estimular o PIB com responsabilidade fiscal.',
-    tip: 'PIB alto pontua, mas deficit alto (G muito acima de T) derruba a sua nota. Estimule sem estourar o orcamento.'
+    tip: 'PIB alto pontua, mas déficit alto (G muito acima de T) derruba a sua nota. Estimule sem estourar o orçamento.'
   }
 };
 
@@ -87,6 +161,12 @@ const DEFAULTS = {
   empresas: { I: 80 },
   governo:  { G: 100, T: 100 }
 };
+
+// Largura da "banda" de calibragem em torno do valor central de cada postura
+// (em unidades do modelo). Ao escolher uma postura no passo 1, o slider do
+// passo 2 fica restrito a [centro - banda, centro + banda], intersectado com
+// os limites da rodada. Assim a escolha qualitativa realmente limita a faixa.
+const STANCE_BANDS = { c1: 0.12, c0: 15, I: 30, G: 30, T: 30 };
 
 // ── Utilitários ───────────────────────────────────────────────
 
@@ -260,6 +340,130 @@ function aggregateSectorValues(submissions, players, sector) {
   return null;
 }
 
+// Tabela de apostas: cada nivel de confianca define o ganho (acerto) e a perda
+// (erro). Apostar passa a ter risco real - errar custa pontos. Os valores sao
+// pequenos perto da missao (0-100) para nao dominar o placar (ver gamificacao.md secao 9).
+const BET_STAKES = {
+  seguro: { label: 'Seguro', win: 6,  loss: -2 },
+  ousado: { label: 'Ousado', win: 15, loss: -8 }
+};
+
+// Calcula o saldo de pontos de uma aposta individual. Funcao pura.
+// Acertar rende o ganho do nivel; errar aplica a perda. Sem aposta = 0.
+function computeBetPayoff(bet, betStake, targetHit) {
+  if (!bet) return 0;
+  const correct = (bet === 'sim' && targetHit) || (bet === 'nao' && !targetHit);
+  const stake = BET_STAKES[betStake] || BET_STAKES.seguro;
+  return correct ? stake.win : stake.loss;
+}
+
+// Calcula os bonus de gamificacao por setor (media proporcional de apostas e travas)
+function computeSectorGamificationBonus(submissions, players, sector, targetHit) {
+  const sectorPlayerIds = Object.entries(players || {})
+    .filter(([, p]) => p.sector === sector)
+    .map(([id]) => id);
+
+  if (sectorPlayerIds.length === 0) {
+    return { betBonus: 0, commitBonus: 0, totalBonus: 0, betCorrectCount: 0, betWrongCount: 0, commitCount: 0 };
+  }
+
+  let totalBetBonus = 0;
+  let totalCommitBonus = 0;
+  let betCorrectCount = 0;
+  let betWrongCount = 0;
+  let commitCount = 0;
+
+  for (const id of sectorPlayerIds) {
+    const sub = submissions?.[id];
+    if (!sub) continue;
+    if (sub.bet) {
+      const correct = (sub.bet === 'sim' && targetHit) || (sub.bet === 'nao' && !targetHit);
+      totalBetBonus += computeBetPayoff(sub.bet, sub.betStake, targetHit);
+      if (correct) betCorrectCount++; else betWrongCount++;
+    }
+    if (sub.lockedEarly) {
+      totalCommitBonus += 5;
+      commitCount++;
+    }
+  }
+
+  const count = sectorPlayerIds.length;
+  return {
+    betBonus: round2(totalBetBonus / count),
+    commitBonus: round2(totalCommitBonus / count),
+    totalBonus: round2((totalBetBonus + totalCommitBonus) / count),
+    betCorrectCount,
+    betWrongCount,
+    commitCount
+  };
+}
+
+// Calcula as insignias (badges) obtidas por cada setor e coletivamente no final das 3 rodadas.
+function computeBadges(allResults) {
+  const badges = { familias: [], empresas: [], governo: [], coletivo: [] };
+  const rounds = [1, 2, 3].filter(r => allResults[r] || allResults[`round_${r}`]);
+  if (rounds.length === 0) return badges;
+
+  const getRoundRes = (r) => allResults[r] || allResults[`round_${r}`];
+
+  // 1. Hat Trick (Coletivo)
+  const hatTrick = [1, 2, 3].every(r => {
+    const res = getRoundRes(r);
+    return res && res.scoring?.targetHit;
+  });
+  if (hatTrick) {
+    badges.coletivo.push({
+      id: 'hat_trick',
+      name: 'Hat Trick Coletivo',
+      desc: 'A economia bateu a meta de PIB de equilíbrio nas 3 rodadas!'
+    });
+  }
+
+  // 2. Mao de Ferro Fiscal (Governo)
+  const maoDeFerro = [1, 2, 3].every(r => {
+    const res = getRoundRes(r);
+    return res && res.penaltyInfo && !res.penaltyInfo.penaltyApplied;
+  });
+  if (maoDeFerro) {
+    badges.governo.push({
+      id: 'mao_de_ferro',
+      name: 'Mão de Ferro Fiscal',
+      desc: 'O Governo governou sem sofrer nenhuma penalidade fiscal por déficit excessivo.'
+    });
+  }
+
+  // 3. Consumista Consciente (Famílias)
+  const consumistaConsciente = [1, 2, 3].every(r => {
+    const res = getRoundRes(r);
+    return res && res.consumption >= 400 && res.privateSavings >= 0;
+  });
+  if (consumistaConsciente) {
+    badges.familias.push({
+      id: 'consumista_consciente',
+      name: 'Consumista Consciente',
+      desc: 'As Famílias mantiveram consumo saudável com poupança positiva em todas as rodadas.'
+    });
+  }
+
+  // 4. Aposta Certeira na Baixa (Empresas)
+  const r2 = getRoundRes(2);
+  if (r2) {
+    const limits = r2.limits;
+    const iMax = limits?.I?.max || 120;
+    const highInvest = r2.IEff >= iMax - 10;
+    const targetHit = r2.scoring?.targetHit;
+    if (highInvest && targetHit) {
+      badges.empresas.push({
+        id: 'aposta_certeira_baixa',
+        name: 'Aposta Certeira na Baixa',
+        desc: 'As Empresas investiram forte perto do teto na crise (R2) e a meta de PIB foi atingida.'
+      });
+    }
+  }
+
+  return badges;
+}
+
 // ── Pontuação por setor (gamificação) ─────────────────────────
 
 /**
@@ -270,9 +474,11 @@ function aggregateSectorValues(submissions, players, sector) {
  * @param {object} result - resultado de calculateEquilibrium + parametros efetivos
  * @param {object} limits - limites da rodada (de getRoundLimits)
  * @param {number} round  - numero da rodada (1..3)
+ * @param {object} [submissions] - submissões de jogadores (opcional)
+ * @param {object} [players] - jogadores conectados (opcional)
  * @returns {object} { familias, empresas, governo, collectiveBonus, targetHit, targetY, breakdown }
  */
-function computeSectorScores(result, limits, round) {
+function computeSectorScores(result, limits, round, submissions, players) {
   const cfg = ROUND_EVENTS[round].scoring;
   const { Y, consumption, privateSavings, IEff, deficit } = result;
 
@@ -300,17 +506,27 @@ function computeSectorScores(result, limits, round) {
   const targetHit = Math.abs(Y - cfg.targetY) <= cfg.targetBand;
   const collectiveBonus = targetHit ? cfg.collectiveBonus : 0;
 
+  // Gamification Individual/Sector bonuses
+  const famBonus = computeSectorGamificationBonus(submissions, players, 'familias', targetHit);
+  const empBonus = computeSectorGamificationBonus(submissions, players, 'empresas', targetHit);
+  const govBonus = computeSectorGamificationBonus(submissions, players, 'governo', targetHit);
+
   return {
-    familias: familiasScore + collectiveBonus,
-    empresas: empresasScore + collectiveBonus,
-    governo:  governoScore + collectiveBonus,
+    familias: Math.round(familiasScore + collectiveBonus + famBonus.totalBonus),
+    empresas: Math.round(empresasScore + collectiveBonus + empBonus.totalBonus),
+    governo:  Math.round(governoScore + collectiveBonus + govBonus.totalBonus),
     collectiveBonus,
     targetHit,
     targetY: cfg.targetY,
+    gamification: {
+      familias: famBonus,
+      empresas: empBonus,
+      governo: govBonus
+    },
     breakdown: {
-      familias: { base: familiasScore, overLeveraged: familiasOverLeveraged },
-      empresas: { base: empresasScore, boldness: round2(boldness), undercapitalized },
-      governo:  { base: governoScore, deficitDrag: round2(deficitDrag), penalty: !!result.penaltyInfo?.penaltyApplied }
+      familias: { base: familiasScore, overLeveraged: familiasOverLeveraged, ...famBonus },
+      empresas: { base: empresasScore, boldness: round2(boldness), undercapitalized, ...empBonus },
+      governo:  { base: governoScore, deficitDrag: round2(deficitDrag), penalty: !!result.penaltyInfo?.penaltyApplied, ...govBonus }
     }
   };
 }
@@ -408,11 +624,116 @@ function computeRoundResult(submissions, players, round, prevResult) {
   };
 
   // Pontuação dos setores (gamificação) — persistida junto do resultado
-  const scoring = computeSectorScores(base, limits, round);
+  const scoring = computeSectorScores(base, limits, round, submissions, players);
   base.scores = { familias: scoring.familias, empresas: scoring.empresas, governo: scoring.governo };
   base.scoring = scoring;
 
   return base;
+}
+
+// ── Projeção ao vivo (gamificação, fase 1) ────────────────────
+
+/**
+ * Projeta o equilíbrio enquanto um jogador ainda está calibrando, assumindo
+ * que os OUTROS setores mantêm os valores efetivos da rodada anterior (ou os
+ * defaults na rodada 1). Serve para o feedback "E se?" na tela de submissão.
+ *
+ * Função pura. Espelha a montagem de computeRoundResult, então o objeto
+ * retornado é compatível com computeSectorScores.
+ *
+ * @param {string} sector       - 'familias' | 'empresas' | 'governo'
+ * @param {object} sectorValues - valores que o jogador está editando (ex: { c0, c1 })
+ * @param {number} round        - rodada atual (1..3)
+ * @param {object|null} prevResult - resultado da rodada anterior (para baseline e teto de I)
+ * @returns {object} resultado projetado (mesmos campos de computeRoundResult, + projected:true)
+ */
+function projectEquilibrium(sector, sectorValues, round, prevResult) {
+  const limits = getRoundLimits(round, prevResult);
+
+  // Baseline dos OUTROS setores: valores efetivos da rodada anterior, ou
+  // defaults na rodada 1 (não existe rodada anterior).
+  const baseline = prevResult ? {
+    c0: prevResult.c0Raw ?? prevResult.c0Eff ?? DEFAULTS.familias.c0,
+    c1: prevResult.c1Eff ?? DEFAULTS.familias.c1,
+    I:  prevResult.IEff  ?? DEFAULTS.empresas.I,
+    G:  prevResult.GEff  ?? DEFAULTS.governo.G,
+    T:  prevResult.TEff  ?? DEFAULTS.governo.T
+  } : {
+    c0: DEFAULTS.familias.c0,
+    c1: DEFAULTS.familias.c1,
+    I:  DEFAULTS.empresas.I,
+    G:  DEFAULTS.governo.G,
+    T:  DEFAULTS.governo.T
+  };
+
+  // Sobrepor o setor do jogador com os valores que ele está mexendo agora
+  const merged = { ...baseline };
+  const v = sectorValues || {};
+  if (sector === 'familias') {
+    if (v.c0 != null) merged.c0 = Number(v.c0);
+    if (v.c1 != null) merged.c1 = Number(v.c1);
+  } else if (sector === 'empresas') {
+    if (v.I != null) merged.I = Number(v.I);
+  } else if (sector === 'governo') {
+    if (v.G != null) merged.G = Number(v.G);
+    if (v.T != null) merged.T = Number(v.T);
+  }
+
+  // Clampar pelos limites da rodada (mesma regra do cálculo real)
+  const c0Raw = clamp(merged.c0, limits.c0.min, limits.c0.max);
+  const c1Raw = clamp(merged.c1, limits.c1.min, limits.c1.max);
+  const IEff  = clamp(merged.I,  limits.I.min,  limits.I.max);
+  const GEff  = clamp(merged.G,  limits.G.min,  limits.G.max);
+  const TEff  = clamp(merged.T,  limits.T.min,  limits.T.max);
+
+  // Penalidade de déficit (idêntica ao cálculo real)
+  const penaltyInfo = applyDeficitPenalty(c0Raw, GEff, TEff, round);
+  const c0Eff = penaltyInfo.c0Effective;
+
+  const equilibrium = calculateEquilibrium({
+    c0: c0Eff, c1: c1Raw, I: IEff, G: GEff, T: TEff
+  });
+
+  return {
+    ...equilibrium,
+    c0Eff, c1Eff: c1Raw, IEff, GEff, TEff, c0Raw,
+    penaltyInfo,
+    limits,
+    round,
+    projected: true
+  };
+}
+
+/**
+ * Estima a pontuação da missão de um setor a partir de um resultado projetado.
+ * Função pura. Reusa computeSectorScores para não duplicar a regra de pontos.
+ *
+ * @returns {object} { points, base, collectiveBonus, targetHit, targetY }
+ */
+function estimateSectorScore(sector, projection, round) {
+  const scoring = computeSectorScores(projection, projection.limits, round);
+  return {
+    points: scoring[sector],
+    base: scoring.breakdown?.[sector]?.base ?? scoring[sector],
+    collectiveBonus: scoring.collectiveBonus,
+    targetHit: scoring.targetHit,
+    targetY: scoring.targetY
+  };
+}
+
+/**
+ * Rótulo qualitativo do estado da economia, relativo à meta da rodada.
+ * Função pura. tone mapeia para uma classe de cor da UI (green/gold/red).
+ *
+ * @returns {object} { label, tone }
+ */
+function describeOutput(Y, round) {
+  const cfg = ROUND_EVENTS[round].scoring;
+  const low  = cfg.targetY - cfg.targetBand;
+  const high = cfg.targetY + cfg.targetBand;
+  if (Y < low)  return { label: 'Estagnada',     tone: 'red' };
+  if (Y > high) return { label: 'Superaquecida', tone: 'gold' };
+  return { label: 'Aquecida', tone: 'green' };
 }
 
 // ── Insights textuais ─────────────────────────────────────────
@@ -425,7 +746,7 @@ function generateRoundInsights(currentResult, prevResult, round) {
     const delta = currentResult.Y - prevResult.Y;
     const pct   = Math.abs((delta / prevResult.Y) * 100).toFixed(1);
     const dir   = delta > 0 ? 'subiu' : 'caiu';
-    insights.push(`O PIB ${dir} ${pct}% em relacao a rodada anterior (de R$${prevResult.Y.toFixed(0)}bi para R$${currentResult.Y.toFixed(0)}bi).`);
+    insights.push(`O PIB ${dir} ${pct}% em relação à rodada anterior (de R$${prevResult.Y.toFixed(0)}bi para R$${currentResult.Y.toFixed(0)}bi).`);
 
     if (Math.abs(currentResult.multiplier - prevResult.multiplier) > 0.05) {
       const mDir = currentResult.multiplier > prevResult.multiplier ? 'subiu' : 'caiu';
@@ -434,11 +755,11 @@ function generateRoundInsights(currentResult, prevResult, round) {
   }
 
   if (currentResult.penaltyInfo.penaltyApplied) {
-    insights.push(`Penalidade fiscal: deficit de R$${currentResult.penaltyInfo.deficit.toFixed(0)}bi reduziu o consumo autonomo em ${(currentResult.penaltyInfo.penaltyRate * 100).toFixed(0)}%.`);
+    insights.push(`Penalidade fiscal: déficit de R$${currentResult.penaltyInfo.deficit.toFixed(0)}bi reduziu o consumo autônomo em ${(currentResult.penaltyInfo.penaltyRate * 100).toFixed(0)}%.`);
   }
 
   if (currentResult.isBalance) {
-    insights.push(`Relacao IS verificada: I = R$${currentResult.IEff.toFixed(0)}bi, S_total = R$${currentResult.totalSavings.toFixed(0)}bi.`);
+    insights.push(`Relação IS verificada: I = R$${currentResult.IEff.toFixed(0)}bi, S_total = R$${currentResult.totalSavings.toFixed(0)}bi.`);
   }
 
   return insights;
@@ -471,7 +792,7 @@ function generateFinalInsights(results) {
     }
   }
   const changePct = Math.abs((results[biggestTo].Y - results[biggestFrom].Y) / results[biggestFrom].Y * 100).toFixed(1);
-  insights.push(`A maior variacao de PIB foi entre a rodada ${biggestFrom} e ${biggestTo} (${changePct}%).`);
+  insights.push(`A maior variação de PIB foi entre a rodada ${biggestFrom} e ${biggestTo} (${changePct}%).`);
 
   // Maior multiplicador
   let maxMult = -Infinity, maxMultRound = 1;
@@ -486,7 +807,7 @@ function generateFinalInsights(results) {
   // Verificação IS em todas as rodadas
   const allBalance = rounds.every(r => results[r].isBalance);
   if (allBalance) {
-    insights.push('Relacao IS verificada em todas as rodadas: o modelo keynesiano esteve sempre em equilibrio.');
+    insights.push('Relação IS verificada em todas as rodadas: o modelo keynesiano esteve sempre em equilíbrio.');
   }
 
   return insights;

@@ -97,11 +97,11 @@ async function masterLogin() {
   const btn  = document.getElementById('btn-login');
 
   if (code.length !== 4) {
-    showError('login-error', 'Digite o codigo de 4 letras da sala.');
+    showError('login-error', 'Digite o código de 4 letras da sala.');
     return;
   }
   if (!/^\d{4}$/.test(key)) {
-    showError('login-error', 'A senha deve ter 4 digitos numericos.');
+    showError('login-error', 'A senha deve ter 4 dígitos numéricos.');
     return;
   }
 
@@ -110,7 +110,7 @@ async function masterLogin() {
   try {
     const exists = await roomExists(code);
     if (!exists) {
-      showError('login-error', 'Sala nao encontrada.');
+      showError('login-error', 'Sala não encontrada.');
       return;
     }
 
@@ -135,7 +135,7 @@ async function masterLogin() {
 
   } catch (err) {
     console.error(err);
-    showError('login-error', 'Erro de conexao. Tente novamente.');
+    showError('login-error', 'Erro de conexão. Tente novamente.');
   } finally {
     setLoading(btn, false);
   }
@@ -163,7 +163,7 @@ function startMasterSession() {
   // Indicador de conexão
   onConnectionChange(connected => {
     document.getElementById('conn-dot').className    = 'conn-dot' + (connected ? ' connected' : '');
-    document.getElementById('conn-label').textContent = connected ? 'Conectado' : 'Sem conexao';
+    document.getElementById('conn-label').textContent = connected ? 'Conectado' : 'Sem conexão';
   });
 }
 
@@ -223,10 +223,14 @@ function updateLobbyView() {
       ? `<span class="badge ${p.sector === 'familias' ? 'badge-green' : p.sector === 'empresas' ? 'badge-blue' : 'badge-gold'}">${sectorName(p.sector)}</span>`
       : `<span class="badge badge-muted">sem setor</span>`;
 
+    const personaLabel = p.persona
+      ? `<span class="text-xs text-muted" style="margin-left: 0.5rem; font-style: italic">(${esc(p.persona)})</span>`
+      : '';
+
     listEl.innerHTML += `
       <div class="player-item">
         <i class="ti ti-user text-muted"></i>
-        <span class="player-item-name">${esc(p.name)}</span>
+        <span class="player-item-name">${esc(p.name)} ${personaLabel}</span>
         <span class="player-item-sector">${sectorLabel}</span>
       </div>`;
   }
@@ -244,7 +248,7 @@ function updateLobbyView() {
 }
 
 function sectorName(s) {
-  return s === 'familias' ? 'Familias' : s === 'empresas' ? 'Empresas' : 'Governo';
+  return s === 'familias' ? 'Famílias' : s === 'empresas' ? 'Empresas' : 'Governo';
 }
 
 function sectorColor(s) {
@@ -279,7 +283,7 @@ function renderDurationDisplay(totalMinutes) {
   if (valEl) valEl.textContent = `${totalMinutes} min`;
   const brk = document.getElementById('duration-breakdown');
   if (brk) {
-    brk.innerHTML = `Por rodada: submissao <strong class="mono">${fmtClock(submissionSeconds)}</strong> | revelacao <strong class="mono">${fmtClock(revealSeconds)}</strong>.`;
+    brk.innerHTML = `Por rodada: submissão <strong class="mono">${fmtClock(submissionSeconds)}</strong> | revelação <strong class="mono">${fmtClock(revealSeconds)}</strong>.`;
   }
 }
 
@@ -551,9 +555,9 @@ function skipToResult() {
 function fillPhase1(result) {
   const el = document.getElementById('phase1-sectors');
   const sectors = [
-    { name: 'Familias', icon: 'ti-home', color: 'green', values: [
-        { label: 'c&#8320; (consumo autonomo)', value: `R$${result.c0Raw?.toFixed(1)}bi` },
-        { label: 'c&#8321; (propensao a consumir)', value: result.c1Eff?.toFixed(2) }
+    { name: 'Famílias', icon: 'ti-home', color: 'green', values: [
+        { label: 'c&#8320; (consumo autônomo)', value: `R$${result.c0Raw?.toFixed(1)}bi` },
+        { label: 'c&#8321; (propensão a consumir)', value: result.c1Eff?.toFixed(2) }
     ]},
     { name: 'Empresas', icon: 'ti-building-factory', color: 'blue', values: [
         { label: 'I (investimento)', value: `R$${result.IEff?.toFixed(1)}bi` }
@@ -589,8 +593,8 @@ function fillPhase2(result, round) {
   if (p.penaltyApplied) {
     html += `
       <div class="deficit-warning mb-3">
-        <strong><i class="ti ti-alert-triangle"></i> Penalidade de deficit fiscal</strong><br>
-        Deficit (G - T) = R$${p.deficit.toFixed(0)}bi > limiar de R$${p.threshold}bi.<br>
+        <strong><i class="ti ti-alert-triangle"></i> Penalidade de déficit fiscal</strong><br>
+        Déficit (G - T) = R$${p.deficit.toFixed(0)}bi > limiar de R$${p.threshold}bi.<br>
         c&#8320; reduzido em ${(p.penaltyRate * 100).toFixed(0)}%: de R$${result.c0Raw?.toFixed(1)}bi para R$${result.c0Eff?.toFixed(1)}bi.
       </div>`;
   } else {
@@ -599,7 +603,7 @@ function fillPhase2(result, round) {
         <i class="ti ti-circle-check text-green" style="font-size:1.5rem"></i>
         <div>
           <div class="fw-700 text-green">Sem penalidades</div>
-          <div class="text-sm text-muted">Deficit = R$${p.deficit.toFixed(0)}bi (dentro do limite de R$${p.threshold}bi)</div>
+          <div class="text-sm text-muted">Déficit = R$${p.deficit.toFixed(0)}bi (dentro do limite de R$${p.threshold}bi)</div>
         </div>
       </div>`;
   }
@@ -607,8 +611,8 @@ function fillPhase2(result, round) {
   if (result.limits?.I?.limitedBySavings) {
     html += `
       <div class="card mt-3" style="border-color:var(--blue)">
-        <div class="text-sm text-muted mb-1">Restricao de investimento</div>
-        <div>Poupanca da rodada anterior: <strong class="mono">R$${result.limits.I.prevSavings?.toFixed(0)}bi</strong></div>
+        <div class="text-sm text-muted mb-1">Restrição de investimento</div>
+        <div>Poupança da rodada anterior: <strong class="mono">R$${result.limits.I.prevSavings?.toFixed(0)}bi</strong></div>
         <div>Investimento maximo: <strong class="mono">R$${result.limits.I.max?.toFixed(0)}bi</strong></div>
         ${result.limits.I.undercapitalized ? `<div class="badge badge-red mt-2">Economia descapitalizada</div>` : ''}
       </div>`;
@@ -644,9 +648,9 @@ function fillPhase5(result) {
   const el = document.getElementById('phase5-auto');
   const { c0Eff: c0, c1Eff: c1, IEff: I, GEff: G, TEff: T, autonomousSpending: A } = result;
   el.innerHTML = `
-    <div>Gasto autonomo = c&#8320; + I + G - c&#8321; &times; T</div>
+    <div>Gasto autônomo = c&#8320; + I + G - c&#8321; &times; T</div>
     <div class="mt-2">= ${c0?.toFixed(1)} + ${I?.toFixed(1)} + ${G?.toFixed(1)} - ${c1?.toFixed(2)} &times; ${T?.toFixed(1)}</div>
-    <div class="mt-2">= <span class="eq-highlight">${A?.toFixed(2)} bilhoes</span></div>
+    <div class="mt-2">= <span class="eq-highlight">${A?.toFixed(2)} bilhões</span></div>
   `;
 }
 
@@ -659,15 +663,15 @@ function fillPhase6(result) {
       <div class="metric-value">${fmtBI(result.consumption)}</div>
     </div>
     <div class="metric-card">
-      <div class="metric-label">Poupanca privada</div>
+      <div class="metric-label">Poupança privada</div>
       <div class="metric-value">${fmtBI(result.privateSavings)}</div>
     </div>
     <div class="metric-card">
-      <div class="metric-label">Poupanca publica</div>
+      <div class="metric-label">Poupança pública</div>
       <div class="metric-value">${fmtBI(result.publicSavings)}</div>
     </div>
     <div class="metric-card">
-      <div class="metric-label">Poupanca total</div>
+      <div class="metric-label">Poupança total</div>
       <div class="metric-value">${fmtBI(result.totalSavings)}</div>
     </div>
   `;
@@ -678,7 +682,7 @@ function fillPhase6(result) {
       <i class="ti ${result.isBalance ? 'ti-check' : 'ti-x'}"></i>
     </div>
     <div>
-      <div class="fw-700">${result.isBalance ? 'Relacao IS verificada' : 'IS nao balanceou'}</div>
+      <div class="fw-700">${result.isBalance ? 'Relação IS verificada' : 'IS não balanceou'}</div>
       <div class="text-sm text-muted">I = ${fmtBI(result.IEff)} | S_total = ${fmtBI(result.totalSavings)}</div>
     </div>
   `;
@@ -749,8 +753,22 @@ function fillScorePhase(result, round) {
   const sectors = ['familias', 'empresas', 'governo'];
   sectorsEl.innerHTML = sectors.map(s => {
     const pts = sc[s] ?? 0;
-    const base = sc.breakdown?.[s]?.base ?? pts;
+    const bd = sc.breakdown?.[s] || {};
+    const base = bd.base ?? pts;
     const bonusNote = sc.collectiveBonus ? ` <span class="text-green text-sm">(+${sc.collectiveBonus} meta)</span>` : '';
+    const betPts = bd.betBonus || 0;
+    const commitPts = bd.commitBonus || 0;
+    const sgn = (n) => (n >= 0 ? '+' : '') + n.toFixed(1);
+    const gamificationNote = (betPts || commitPts)
+      ? ` <span class="text-blue text-sm">(${sgn(betPts + commitPts)} aposta/trava)</span>`
+      : '';
+
+    let subDetail = `${base} pela missão${bonusNote}${gamificationNote}`;
+    if (bd.betCorrectCount > 0 || bd.betWrongCount > 0 || bd.commitCount > 0) {
+      const betTxt = `Aposta: ${sgn(betPts)} pts (${bd.betCorrectCount || 0} acertaram, ${bd.betWrongCount || 0} erraram)`;
+      const commitTxt = `Trava: +${commitPts.toFixed(1)} pts (${bd.commitCount || 0} travaram)`;
+      subDetail += `<br><span class="text-xs text-muted" style="margin-left: 1.5rem">└ ${betTxt} | ${commitTxt}</span>`;
+    }
     return `
       <div class="score-sector-row">
         <span class="lb-name">
@@ -759,7 +777,7 @@ function fillScorePhase(result, round) {
         </span>
         <span class="score-pop mono text-${sectorColor(s)}">+${pts}</span>
       </div>
-      <div class="text-sm text-muted score-sector-note">${base} pela missao${bonusNote}</div>`;
+      <div class="text-sm text-muted score-sector-note" style="margin-bottom:0.75rem">${subDetail}</div>`;
   }).join('');
 
   // Ranking acumulado
@@ -789,10 +807,10 @@ function fillPhase7(result, prevResult, round) {
     { label: 'PIB (Y)',            value: fmtBI(result.Y) },
     { label: 'Multiplicador',      value: `${result.multiplier?.toFixed(2)}x` },
     { label: 'Consumo total',      value: fmtBI(result.consumption) },
-    { label: 'Renda disponivel',   value: fmtBI(result.disposableIncome) },
-    { label: 'Poupanca privada',   value: fmtBI(result.privateSavings) },
-    { label: 'Poupanca publica',   value: fmtBI(result.publicSavings) },
-    { label: 'Poupanca total',     value: fmtBI(result.totalSavings) },
+    { label: 'Renda disponível',   value: fmtBI(result.disposableIncome) },
+    { label: 'Poupança privada',   value: fmtBI(result.privateSavings) },
+    { label: 'Poupança pública',   value: fmtBI(result.publicSavings) },
+    { label: 'Poupança total',     value: fmtBI(result.totalSavings) },
   ].map(r => `
     <div class="metric-card">
       <div class="metric-label">${r.label}</div>
@@ -803,7 +821,7 @@ function fillPhase7(result, prevResult, round) {
   const penEl = document.getElementById('phase7-penalty');
   if (result.penaltyInfo?.penaltyApplied) {
     penEl.style.display = '';
-    penEl.innerHTML = `<i class="ti ti-alert-triangle"></i> Penalidade fiscal: deficit de ${fmtBI(result.penaltyInfo.deficit)} reduziu c&#8320; em ${(result.penaltyInfo.penaltyRate * 100).toFixed(0)}%.`;
+    penEl.innerHTML = `<i class="ti ti-alert-triangle"></i> Penalidade fiscal: déficit de ${fmtBI(result.penaltyInfo.deficit)} reduziu c&#8320; em ${(result.penaltyInfo.penaltyRate * 100).toFixed(0)}%.`;
   } else {
     penEl.style.display = 'none';
   }
@@ -815,7 +833,7 @@ function fillPhase7(result, prevResult, round) {
       <i class="ti ${result.isBalance ? 'ti-check' : 'ti-x'}"></i>
     </div>
     <div>
-      <div class="fw-700">${result.isBalance ? 'Relacao IS verificada' : 'IS nao balanceou'}</div>
+      <div class="fw-700">${result.isBalance ? 'Relação IS verificada' : 'IS não balanceou'}</div>
       <div class="text-sm text-muted">I = ${fmtBI(result.IEff)} | S = ${fmtBI(result.totalSavings)}</div>
     </div>`;
 
@@ -896,7 +914,7 @@ async function showFinalResults(results) {
   if (winners.length === 1) {
     winnerEl.innerHTML = `<i class="ti ti-trophy text-gold"></i> Setor vencedor: <strong class="text-${sectorColor(winners[0].sector)}">${sectorName(winners[0].sector)}</strong> com ${winners[0].total} pontos.`;
   } else if (winners.length > 1) {
-    winnerEl.innerHTML = `<i class="ti ti-trophy text-gold"></i> Empate na lideranca: ${winners.map(w => sectorName(w.sector)).join(', ')} com ${winners[0].total} pontos.`;
+    winnerEl.innerHTML = `<i class="ti ti-trophy text-gold"></i> Empate na liderança: ${winners.map(w => sectorName(w.sector)).join(', ')} com ${winners[0].total} pontos.`;
   } else {
     winnerEl.innerHTML = '';
   }
@@ -932,14 +950,14 @@ async function showFinalResults(results) {
             { label: 'PIB (Y)', value: fmtBI(res.Y) },
             { label: 'Multiplicador', value: `${res.multiplier?.toFixed(2)}x` },
             { label: 'c&#8321;', value: res.c1Eff?.toFixed(2) },
-            { label: 'Poupanca total', value: fmtBI(res.totalSavings) },
+            { label: 'Poupança total', value: fmtBI(res.totalSavings) },
           ].map(m => `
             <div class="metric-card">
               <div class="metric-label">${m.label}</div>
               <div class="metric-value">${m.value}</div>
             </div>`).join('')}
         </div>
-        ${res.penaltyInfo?.penaltyApplied ? `<div class="deficit-warning mt-2 text-sm"><i class="ti ti-alert-triangle"></i> Penalidade de deficit aplicada.</div>` : ''}
+        ${res.penaltyInfo?.penaltyApplied ? `<div class="deficit-warning mt-2 text-sm"><i class="ti ti-alert-triangle"></i> Penalidade de déficit aplicada.</div>` : ''}
       </div>`;
   }).join('');
 
@@ -948,6 +966,43 @@ async function showFinalResults(results) {
   document.getElementById('final-insights').innerHTML = insights.map(i =>
     `<li class="insight-item"><i class="ti ti-info-circle"></i> ${i}</li>`
   ).join('') || '<li class="insight-item text-muted">Dados insuficientes para destaques.</li>';
+
+  // Renderizar Insígnias (Badges)
+  const badgesObj = computeBadges(results);
+  const allBadges = [];
+  const sectors = ['familias', 'empresas', 'governo'];
+  sectors.forEach(s => {
+    (badgesObj[s] || []).forEach(b => {
+      allBadges.push({ ...b, sector: s });
+    });
+  });
+  (badgesObj.coletivo || []).forEach(b => {
+    allBadges.push({ ...b, sector: 'coletivo' });
+  });
+
+  const badgesCard = document.getElementById('final-badges-card');
+  const badgesContainer = document.getElementById('final-badges-container');
+  
+  if (badgesCard && badgesContainer) {
+    if (allBadges.length > 0) {
+      badgesCard.style.display = '';
+      badgesContainer.innerHTML = allBadges.map(badge => {
+        const borderCls = badge.sector === 'familias' ? 'badge-green' : badge.sector === 'empresas' ? 'badge-blue' : badge.sector === 'governo' ? 'badge-gold' : 'badge-muted';
+        const label = badge.sector === 'coletivo' ? 'Coletivo' : sectorName(badge.sector);
+        return `
+          <div class="badge-item card" style="display:flex; align-items:center; gap:0.75rem; padding:0.75rem; background:var(--bg-600); margin:0; border:1px solid var(--border)">
+            <div style="font-size:1.75rem; flex-shrink:0"><i class="ti ti-award text-gold"></i></div>
+            <div>
+              <div class="fw-700 text-green" style="font-size:0.875rem">${badge.name} <span class="badge ${borderCls}" style="font-size:0.65rem; padding:0.15rem 0.35rem">${label}</span></div>
+              <div class="text-xs text-300" style="margin:0">${badge.desc}</div>
+            </div>
+          </div>
+        `;
+      }).join('');
+    } else {
+      badgesCard.style.display = 'none';
+    }
+  }
 
   // IS checks
   const isChecks = document.getElementById('final-is-checks');
@@ -974,3 +1029,4 @@ async function endGameConfirmed() {
   hideConfirm('confirm-end');
   await closeRoom(_roomCode);
 }
+

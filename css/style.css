@@ -236,6 +236,109 @@ input[type="range"]::-moz-range-thumb {
   font-family: var(--font-mono);
 }
 
+/* ── Projeção ao vivo (E se?) ───────────────────────────────── */
+.projection-card {
+  border: 1px solid var(--blue);
+  background: var(--bg-600);
+}
+
+.projection-header {
+  display: flex;
+  flex-direction: column;
+  margin-bottom: 0.75rem;
+}
+.projection-title {
+  font-size: 0.875rem;
+  font-weight: 700;
+  color: var(--blue);
+}
+.projection-hint {
+  font-size: 0.75rem;
+  color: var(--text-500);
+}
+
+.projection-pib {
+  display: flex;
+  align-items: baseline;
+  gap: 0.4rem;
+  margin-bottom: 0.6rem;
+}
+.projection-pib-label {
+  font-size: 0.8125rem;
+  color: var(--text-300);
+  margin-right: auto;
+}
+.projection-pib-value {
+  font-size: 2rem;
+  font-weight: 700;
+  color: var(--green);
+  line-height: 1;
+}
+.projection-pib-unit {
+  font-size: 0.8125rem;
+  color: var(--text-300);
+}
+
+.projection-track {
+  position: relative;
+  height: 10px;
+  background: var(--bg-500);
+  border-radius: 999px;
+  overflow: hidden;
+  margin-bottom: 0.9rem;
+}
+.projection-bar {
+  height: 100%;
+  border-radius: 999px;
+  background: var(--green);
+  transition: width 0.25s ease;
+}
+.projection-bar.tone-green { background: var(--green); }
+.projection-bar.tone-gold  { background: var(--gold); }
+.projection-bar.tone-red   { background: var(--red); }
+
+.projection-track .projection-target {
+  position: absolute;
+  top: -2px;
+  width: 2px;
+  height: 14px;
+  background: var(--text-100);
+  opacity: 0.7;
+  transform: translateX(-1px);
+  overflow: visible;
+}
+
+.projection-meta {
+  display: flex;
+  gap: 0.75rem;
+}
+.projection-stat {
+  flex: 1;
+  background: var(--bg-700);
+  border-radius: var(--r-input);
+  padding: 0.6rem 0.75rem;
+}
+.projection-stat-label {
+  font-size: 0.75rem;
+  color: var(--text-500);
+  margin-bottom: 0.15rem;
+}
+.projection-stat-value {
+  font-size: 1.0625rem;
+  font-weight: 700;
+  color: var(--text-100);
+}
+
+.projection-bonus {
+  margin-top: 0.75rem;
+  font-size: 0.8125rem;
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+.projection-bonus.hit  { color: var(--green); }
+.projection-bonus.miss { color: var(--text-300); }
+
 /* ── Botões ─────────────────────────────────────────────────── */
 .btn {
   display: inline-flex;
@@ -1154,3 +1257,190 @@ input[type="range"]::-moz-range-thumb {
   .score-pop { font-size: 2rem; }
   .target-banner i { font-size: 2rem; }
 }
+
+/* ── Estilos de Gamificação (Fases 2 a 6) ────────────────── */
+
+/* Briefing da rodada (tela cheia antes do fluxo de decisao) */
+.briefing {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  min-height: calc(100vh - 11rem);
+  justify-content: center;
+  padding: 0.5rem 0 1rem;
+}
+
+/* Dentro do briefing o espacamento vem do gap do container */
+.briefing .round-banner,
+.briefing .mission-card,
+.briefing .error-msg.mb-4,
+.briefing .card.mb-4 {
+  margin-bottom: 0;
+}
+
+/* Cabecalho compacto do fluxo de decisao */
+.flow-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  margin-bottom: 1rem;
+  padding-bottom: 0.75rem;
+  border-bottom: 1px solid var(--border);
+}
+
+.flow-round {
+  color: var(--gold);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  font-size: 0.75rem;
+}
+
+.flow-persona { font-size: 0.875rem; font-weight: 700; }
+
+/* Respiro entre titulo e cards de cada passo */
+.step-panel > h4 { margin-bottom: 0.75rem; }
+
+/* Stepper Flow */
+.stepper {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: var(--bg-700);
+  border: 1px solid var(--border);
+  border-radius: var(--r-card);
+  padding: 0.75rem 1rem;
+}
+
+.step-indicator {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  cursor: pointer;
+  flex: 1;
+}
+
+.step-num {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: var(--bg-600);
+  border: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: var(--text-300);
+  margin-bottom: 0.25rem;
+  transition: all 0.2s ease;
+}
+
+.step-indicator.active .step-num {
+  background: var(--green);
+  border-color: var(--green);
+  color: var(--bg-900);
+}
+
+.step-indicator.completed .step-num {
+  background: var(--blue);
+  border-color: var(--blue);
+  color: var(--bg-900);
+}
+
+.step-title {
+  font-size: 0.6875rem;
+  font-weight: 600;
+  color: var(--text-300);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  text-align: center;
+}
+
+.step-indicator.active .step-title {
+  color: var(--green);
+}
+
+.step-line {
+  height: 1px;
+  background: var(--border);
+  flex: 0.5;
+  margin-bottom: 12px;
+}
+
+/* Contraste das apostas: quando um botao de aposta/confianca esta selecionado
+   ele recebe fundo verde (btn-primary) ou vermelho (btn-danger). Forcar o texto
+   e os icones internos para a cor de fundo escura garante legibilidade, sem
+   afetar o estado nao selecionado (fundo escuro com acentos verde/vermelho). */
+.bet-options .btn-primary, .bet-options .btn-primary *,
+.bet-options .btn-danger,  .bet-options .btn-danger *,
+.stake-options .btn-primary, .stake-options .btn-primary * {
+  color: var(--bg-900) !important;
+}
+
+/* Dilemma Cards */
+.dilemma-card {
+  transition: all 0.2s ease-in-out;
+}
+
+.dilemma-card:hover {
+  background-color: var(--bg-600);
+}
+
+.dilemma-card.selected {
+  background-color: rgba(0, 230, 118, 0.05);
+}
+
+/* Split Slider Track & Thumb */
+.split-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 8px;
+  height: 32px;
+  background: var(--text-100);
+  border-radius: 4px;
+  cursor: ew-resize;
+  border: 1px solid var(--border);
+}
+
+.split-slider::-moz-range-thumb {
+  width: 8px;
+  height: 32px;
+  background: var(--text-100);
+  border-radius: 4px;
+  cursor: ew-resize;
+  border: 1px solid var(--border);
+}
+
+/* Consenso Needle */
+.huddle-needle {
+  transition: left 0.3s ease-out;
+}
+
+/* Persona Header Inline */
+.persona-header {
+  border-color: var(--border);
+  background: var(--bg-700);
+}
+
+/* Badges final screen colors */
+.border-green { border-color: var(--green) !important; }
+.border-blue { border-color: var(--blue) !important; }
+.border-gold { border-color: var(--gold) !important; }
+.border-muted { border-color: var(--text-500) !important; }
+
+.badge-green { background: rgba(0, 230, 118, 0.15) !important; color: var(--green) !important; }
+.badge-blue { background: rgba(96, 165, 250, 0.15) !important; color: var(--blue) !important; }
+.badge-gold { background: rgba(251, 191, 36, 0.15) !important; color: var(--gold) !important; }
+.badge-muted { background: var(--bg-600) !important; color: var(--text-300) !important; }
+
+/* Micro-animations */
+.animate-pulse {
+  animation: pulse-op 1.5s infinite ease-in-out;
+}
+
+@keyframes pulse-op {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.4; }
+}
+
