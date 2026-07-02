@@ -1,0 +1,791 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Três Setores, Uma Economia</title>
+
+<!-- Fontes: DM Sans (corpo/titulos) e Space Mono (numeros/formula), iguais ao jogo -->
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@500;700;800&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css" />
+
+<style>
+  /* ===========================================
+     RESET
+     =========================================== */
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  /* ===========================================
+     TEMA: paleta e tipografia do jogo (CLAUDE.md)
+     =========================================== */
+  :root {
+    --bg-0: #080d12;
+    --bg-1: #101923;
+    --bg-2: #192636;
+    --text-primary: #f2f6f9;
+    --text-secondary: #8fa2b8;
+    --green: #00e676;
+    --blue: #60a5fa;
+    --gold: #fbbf24;
+    --red: #f87171;
+    --line: rgba(242, 246, 249, 0.12);
+
+    --font-display: 'DM Sans', sans-serif;
+    --font-mono: 'Space Mono', monospace;
+
+    --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
+    --duration-normal: 0.7s;
+  }
+
+  /* ===========================================
+     VIEWPORT FITTING: MANDATORY BASE STYLES
+     (conteudo integral de viewport-base.css)
+     =========================================== */
+  html, body { height: 100%; overflow-x: hidden; }
+  html { scroll-snap-type: y mandatory; scroll-behavior: smooth; }
+
+  .slide {
+    width: 100vw;
+    height: 100vh;
+    height: 100dvh;
+    overflow: hidden;
+    scroll-snap-align: start;
+    display: flex;
+    flex-direction: column;
+    position: relative;
+  }
+
+  .slide-content {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    max-height: 100%;
+    overflow: hidden;
+    padding: var(--slide-padding);
+  }
+
+  :root {
+    --title-size: clamp(1.5rem, 5vw, 4rem);
+    --h2-size: clamp(1.25rem, 3.5vw, 2.5rem);
+    --h3-size: clamp(1rem, 2.5vw, 1.75rem);
+    --body-size: clamp(0.75rem, 1.5vw, 1.125rem);
+    --small-size: clamp(0.65rem, 1vw, 0.875rem);
+    --slide-padding: clamp(1rem, 4vw, 4rem);
+    --content-gap: clamp(0.5rem, 2vw, 2rem);
+    --element-gap: clamp(0.25rem, 1vw, 1rem);
+  }
+
+  .card, .container, .content-box { max-width: min(90vw, 1000px); max-height: min(80vh, 700px); }
+  .feature-list, .bullet-list { gap: clamp(0.4rem, 1vh, 1rem); }
+  .feature-list li, .bullet-list li { font-size: var(--body-size); line-height: 1.4; }
+  .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 250px), 1fr)); gap: clamp(0.5rem, 1.5vw, 1rem); }
+  img, .image-container { max-width: 100%; max-height: min(50vh, 400px); object-fit: contain; }
+
+  @media (max-height: 700px) {
+    :root { --slide-padding: clamp(0.75rem, 3vw, 2rem); --content-gap: clamp(0.4rem, 1.5vw, 1rem); --title-size: clamp(1.25rem, 4.5vw, 2.5rem); --h2-size: clamp(1rem, 3vw, 1.75rem); }
+  }
+  @media (max-height: 600px) {
+    :root { --slide-padding: clamp(0.5rem, 2.5vw, 1.5rem); --content-gap: clamp(0.3rem, 1vw, 0.75rem); --title-size: clamp(1.1rem, 4vw, 2rem); --body-size: clamp(0.7rem, 1.2vw, 0.95rem); }
+    .nav-dots, .keyboard-hint, .decorative { display: none; }
+  }
+  @media (max-height: 500px) {
+    :root { --slide-padding: clamp(0.4rem, 2vw, 1rem); --title-size: clamp(1rem, 3.5vw, 1.5rem); --h2-size: clamp(0.9rem, 2.5vw, 1.25rem); --body-size: clamp(0.65rem, 1vw, 0.85rem); }
+  }
+  @media (max-width: 600px) {
+    :root { --title-size: clamp(1.25rem, 7vw, 2.5rem); }
+    .grid { grid-template-columns: 1fr; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after { animation-duration: 0.01ms !important; transition-duration: 0.2s !important; }
+    html { scroll-behavior: auto; }
+  }
+
+  /* ===========================================
+     LEGIBILIDADE A DISTANCIA
+     Sobrescreve os tamanhos padrao: a plateia le de longe,
+     entao os minimos precisam ser bem maiores que um deck comum.
+     =========================================== */
+  :root {
+    --title-size: clamp(2.2rem, 5vw, 4.2rem);
+    --h2-size: clamp(1.7rem, 3.6vw, 2.8rem);
+    --h3-size: clamp(1.25rem, 2.4vw, 1.75rem);
+    --body-size: clamp(1.05rem, 1.8vw, 1.45rem);
+    --small-size: clamp(0.9rem, 1.2vw, 1.1rem);
+  }
+  @media (max-height: 760px) {
+    :root { --title-size: clamp(1.9rem, 4.2vw, 3.2rem); --h2-size: clamp(1.5rem, 3.2vw, 2.3rem); --body-size: clamp(0.98rem, 1.7vw, 1.28rem); }
+  }
+  @media (max-height: 700px) {
+    :root { --title-size: clamp(1.8rem, 4vw, 3rem); --h2-size: clamp(1.4rem, 3vw, 2.1rem); --body-size: clamp(0.95rem, 1.6vw, 1.2rem); }
+  }
+  @media (max-height: 600px) {
+    :root { --title-size: clamp(1.7rem, 5vw, 2.6rem); --h2-size: clamp(1.3rem, 3.4vw, 2rem); --body-size: clamp(0.9rem, 1.7vw, 1.1rem); }
+  }
+  @media (max-height: 500px) {
+    :root { --title-size: clamp(1.4rem, 4.5vw, 2.1rem); --h2-size: clamp(1.1rem, 3vw, 1.6rem); --body-size: clamp(0.85rem, 1.5vw, 1rem); }
+  }
+
+  /* ===========================================
+     BASE
+     =========================================== */
+  body {
+    background: var(--bg-0);
+    color: var(--text-primary);
+    font-family: var(--font-display);
+    font-weight: 500;
+  }
+
+  /* Barra de rolagem escondida: a navegacao e por teclado, pontos ou swipe.
+     A rolagem continua funcionando normalmente, apenas sem a barra visivel. */
+  html { scrollbar-width: none; -ms-overflow-style: none; }        /* Firefox / IE-Edge */
+  html::-webkit-scrollbar, body::-webkit-scrollbar { width: 0; height: 0; display: none; } /* WebKit */
+
+  .slide { background: var(--bg-0); }
+  .slide.alt { background: var(--bg-2); }
+
+  .kicker {
+    font-family: var(--font-mono);
+    font-size: var(--small-size);
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--green);
+    font-weight: 700;
+  }
+
+  h1, h2, h3 { font-family: var(--font-display); font-weight: 800; line-height: 1.08; letter-spacing: -0.01em; }
+  h1 { font-size: var(--title-size); }
+  h2 { font-size: var(--h2-size); }
+  h3 { font-size: var(--h3-size); }
+  p { font-size: var(--body-size); color: var(--text-secondary); line-height: 1.45; font-weight: 500; }
+
+  .text-green { color: var(--green); }
+  .text-blue { color: var(--blue); }
+  .text-gold { color: var(--gold); }
+
+  /* Padrao de fundo: grade tecnica sutil, sem gradiente colorido, so linhas finas */
+  .grid-bg {
+    background-image:
+      linear-gradient(var(--line) 1px, transparent 1px),
+      linear-gradient(90deg, var(--line) 1px, transparent 1px);
+    background-size: clamp(36px, 5vw, 64px) clamp(36px, 5vw, 64px);
+    background-position: center;
+    opacity: 0.5;
+  }
+  .bg-layer { position: absolute; inset: 0; z-index: 0; pointer-events: none; }
+  /* Conteudo sempre acima das camadas de fundo (grade e ghost type) */
+  .slide-content { position: relative; z-index: 2; }
+
+  /* Ghost type de fundo: elemento decorativo, sempre atras do conteudo (z-index 0),
+     ancorado no canto superior para nao competir com o texto central. */
+  .ghost-y {
+    position: absolute;
+    top: clamp(-2rem, -3vh, -0.5rem);
+    right: clamp(-1rem, -1vw, 1.5rem);
+    font-family: var(--font-mono);
+    font-weight: 700;
+    font-size: clamp(7rem, 17vw, 17rem);
+    color: var(--bg-2);
+    z-index: 0;
+    line-height: 1;
+    user-select: none;
+    pointer-events: none;
+  }
+  .slide.alt .ghost-y { color: var(--bg-1); }
+
+  /* ===========================================
+     PROGRESSO E NAVEGACAO
+     =========================================== */
+  .progress-bar {
+    position: fixed; top: 0; left: 0; height: 4px;
+    background: var(--green);
+    width: 0%;
+    z-index: 500;
+    transition: width 0.25s var(--ease-out-expo);
+  }
+
+  .nav-dots {
+    position: fixed;
+    right: clamp(0.8rem, 2vw, 2rem);
+    top: 50%;
+    transform: translateY(-50%);
+    display: flex;
+    flex-direction: column;
+    gap: clamp(0.5rem, 1.2vh, 0.9rem);
+    z-index: 500;
+  }
+  .nav-dot {
+    width: clamp(8px, 1vw, 11px);
+    height: clamp(8px, 1vw, 11px);
+    border-radius: 999px;
+    background: transparent;
+    border: 2px solid var(--text-secondary);
+    cursor: pointer;
+    padding: 0;
+    transition: background 0.25s, border-color 0.25s, transform 0.25s;
+  }
+  .nav-dot.active { background: var(--green); border-color: var(--green); transform: scale(1.25); }
+
+  .keyboard-hint {
+    position: fixed;
+    bottom: clamp(0.8rem, 2vh, 1.4rem);
+    left: 50%;
+    transform: translateX(-50%);
+    font-family: var(--font-mono);
+    font-size: var(--small-size);
+    color: var(--text-secondary);
+    letter-spacing: 0.05em;
+    z-index: 500;
+    display: flex;
+    align-items: center;
+    gap: 0.5em;
+  }
+
+  /* ===========================================
+     ANIMACOES DE ENTRADA
+     =========================================== */
+  .reveal { opacity: 0; transform: translateY(28px); transition: opacity var(--duration-normal) var(--ease-out-expo), transform var(--duration-normal) var(--ease-out-expo); }
+  .slide.visible .reveal { opacity: 1; transform: translateY(0); }
+  .reveal:nth-child(1) { transition-delay: 0.05s; }
+  .reveal:nth-child(2) { transition-delay: 0.16s; }
+  .reveal:nth-child(3) { transition-delay: 0.27s; }
+  .reveal:nth-child(4) { transition-delay: 0.38s; }
+  .reveal:nth-child(5) { transition-delay: 0.49s; }
+  .reveal:nth-child(6) { transition-delay: 0.6s; }
+
+  .reveal-scale { opacity: 0; transform: scale(0.92); transition: opacity 0.6s var(--ease-out-expo), transform 0.6s var(--ease-out-expo); }
+  .slide.visible .reveal-scale { opacity: 1; transform: scale(1); }
+
+  @keyframes pulseDot {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.35; }
+  }
+
+  /* ===========================================
+     SLIDE 1: TITULO
+     =========================================== */
+  .title-slide .slide-content { align-items: flex-start; gap: var(--content-gap); max-width: min(92vw, 1100px); margin: 0 auto; width: 100%; }
+  .title-slide h1 { max-width: 14ch; }
+  .title-slide .subtitle { font-size: clamp(1.1rem, 2vw, 1.5rem); color: var(--text-primary); font-weight: 500; max-width: 38ch; }
+
+  .sector-row { display: flex; gap: clamp(0.8rem, 2vw, 1.6rem); margin-top: clamp(0.6rem, 2vh, 1.2rem); flex-wrap: wrap; }
+  .sector-chip {
+    display: flex; align-items: center; gap: 0.6em;
+    border: 2px solid var(--line);
+    border-radius: 999px;
+    padding: clamp(0.5rem, 1vh, 0.75rem) clamp(1rem, 2vw, 1.4rem);
+    font-family: var(--font-mono);
+    font-size: var(--small-size);
+    font-weight: 700;
+    letter-spacing: 0.03em;
+  }
+  .sector-chip i { font-size: 1.3em; }
+  .sector-chip.familias { border-color: var(--green); color: var(--green); }
+  .sector-chip.empresas { border-color: var(--blue); color: var(--blue); }
+  .sector-chip.governo { border-color: var(--gold); color: var(--gold); }
+
+  /* ===========================================
+     SLIDE 2: FORMULA
+     =========================================== */
+  .formula-slide .slide-content { max-width: min(94vw, 1200px); margin: 0 auto; width: 100%; gap: var(--content-gap); }
+  .heading-row { display: flex; align-items: center; gap: 0.5em; }
+  .heading-row i { color: var(--green); font-size: clamp(1.6rem, 3vw, 2.4rem); }
+
+  .equation-box {
+    border: 2px solid var(--line);
+    border-radius: 14px;
+    background: var(--bg-0);
+    padding: clamp(1rem, 3vh, 2rem) clamp(1.2rem, 3vw, 2.4rem);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.35em;
+    flex-wrap: wrap;
+    font-family: var(--font-mono);
+    font-weight: 700;
+    font-size: clamp(1.4rem, 3.6vw, 2.8rem);
+    color: var(--text-primary);
+  }
+  .slide.alt .equation-box { background: var(--bg-1); }
+  .frac { display: inline-flex; flex-direction: column; align-items: center; line-height: 1.15; margin: 0 0.15em; vertical-align: middle; }
+  .frac .num, .frac .den { padding: 0 0.15em; }
+  .frac .bar { width: 100%; height: 3px; background: var(--green); margin: 0.08em 0; }
+  .eq-accent { color: var(--green); }
+
+  .var-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: clamp(0.5rem, 1.2vw, 0.9rem); }
+  .var-card {
+    border: 2px solid var(--line);
+    border-radius: 14px;
+    padding: clamp(0.6rem, 1.6vh, 1.1rem) clamp(0.4rem, 1vw, 0.7rem);
+    text-align: center;
+  }
+  .var-card .sym { font-family: var(--font-mono); font-weight: 700; font-size: clamp(1.2rem, 2.4vw, 1.9rem); }
+  .var-card .lbl { font-size: clamp(0.7rem, 1.1vw, 0.95rem); color: var(--text-secondary); margin-top: 0.3em; font-weight: 600; line-height: 1.25; }
+  .var-card.familias { border-color: rgba(0, 230, 118, 0.4); }
+  .var-card.familias .sym { color: var(--green); }
+  .var-card.empresas { border-color: rgba(96, 165, 250, 0.4); }
+  .var-card.empresas .sym { color: var(--blue); }
+  .var-card.governo { border-color: rgba(251, 191, 36, 0.4); }
+  .var-card.governo .sym { color: var(--gold); }
+
+  .callout {
+    display: flex; align-items: center; gap: 0.7em;
+    font-size: var(--body-size);
+    color: var(--text-primary);
+    font-weight: 600;
+  }
+  .callout i { color: var(--gold); font-size: 1.4em; flex-shrink: 0; }
+
+  /* ===========================================
+     SLIDE 3: MECANICA
+     =========================================== */
+  .mech-slide .slide-content { max-width: min(94vw, 1150px); margin: 0 auto; width: 100%; gap: var(--content-gap); }
+  .mech-list { list-style: none; display: flex; flex-direction: column; gap: clamp(0.7rem, 1.8vh, 1.2rem); }
+  .mech-list li {
+    display: flex; align-items: flex-start; gap: clamp(0.7rem, 1.6vw, 1.1rem);
+    border-left: 4px solid var(--green);
+    padding: clamp(0.4rem, 1vh, 0.6rem) 0 clamp(0.4rem, 1vh, 0.6rem) clamp(0.8rem, 1.6vw, 1.2rem);
+  }
+  .mech-list .num { font-family: var(--font-mono); font-weight: 700; color: var(--green); font-size: var(--h3-size); flex-shrink: 0; }
+  .mech-list p { color: var(--text-primary); font-size: var(--body-size); margin: 0; }
+  .mech-list strong { color: var(--green); font-weight: 800; }
+
+  /* ===========================================
+     SLIDE 4: PONTUACAO
+     =========================================== */
+  .score-slide .slide-content { max-width: min(94vw, 1200px); margin: 0 auto; width: 100%; gap: clamp(0.7rem, 1.8vh, 1.3rem); }
+  .mission-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: clamp(0.6rem, 1.4vw, 1.1rem); }
+  .mission-card {
+    border: 2px solid var(--line);
+    border-radius: 14px;
+    padding: clamp(0.8rem, 2vh, 1.3rem);
+    display: flex; flex-direction: column; gap: 0.4em;
+  }
+  .mission-card .head { display: flex; align-items: center; gap: 0.5em; font-family: var(--font-mono); font-weight: 700; font-size: clamp(1rem, 1.7vw, 1.3rem); }
+  .mission-card p { font-size: clamp(0.85rem, 1.4vw, 1.1rem); color: var(--text-primary); margin: 0; font-weight: 500; }
+  .mission-card.familias { border-color: var(--green); } .mission-card.familias .head { color: var(--green); }
+  .mission-card.empresas { border-color: var(--blue); } .mission-card.empresas .head { color: var(--blue); }
+  .mission-card.governo { border-color: var(--gold); } .mission-card.governo .head { color: var(--gold); }
+
+  .bonus-row { display: flex; gap: clamp(0.6rem, 1.4vw, 1.1rem); flex-wrap: wrap; }
+  .bonus-card {
+    flex: 1; min-width: 260px;
+    border: 2px dashed var(--line);
+    border-radius: 14px;
+    padding: clamp(0.7rem, 1.8vh, 1.1rem) clamp(0.9rem, 2vw, 1.3rem);
+    display: flex; align-items: center; gap: 0.8em;
+  }
+  .bonus-card i { font-size: clamp(1.6rem, 2.6vw, 2.2rem); color: var(--gold); flex-shrink: 0; }
+  .bonus-card p { margin: 0; color: var(--text-primary); font-size: clamp(0.85rem, 1.5vw, 1.15rem); font-weight: 600; }
+  .bonus-card strong { color: var(--gold); }
+
+  /* ===========================================
+     SLIDE 5: QR CODE
+     =========================================== */
+  .qr-slide .slide-content { align-items: center; text-align: center; gap: var(--content-gap); }
+  .qr-card {
+    background: #ffffff;
+    border-radius: 18px;
+    padding: clamp(0.7rem, 1.8vh, 1.2rem);
+    display: inline-block;
+    line-height: 0;
+  }
+  /* height auto: mantem a proporcao quadrada real do PNG, sem faixa branca extra.
+     object-fit none evita qualquer letterbox herdado da regra global de img. */
+  .qr-card img {
+    width: clamp(200px, 33vh, 300px);
+    height: auto;
+    max-height: none;
+    object-fit: contain;
+    border-radius: 8px;
+    display: block;
+  }
+
+  .join-steps { display: flex; gap: clamp(1rem, 3vw, 2.4rem); flex-wrap: wrap; justify-content: center; }
+  .join-steps .step { display: flex; flex-direction: column; align-items: center; gap: 0.35em; max-width: 16ch; }
+  .join-steps .step .n {
+    width: clamp(1.8rem, 3.2vw, 2.6rem); height: clamp(1.8rem, 3.2vw, 2.6rem);
+    border-radius: 999px; border: 2px solid var(--green); color: var(--green);
+    display: flex; align-items: center; justify-content: center;
+    font-family: var(--font-mono); font-weight: 700; font-size: clamp(0.9rem, 1.6vw, 1.2rem);
+  }
+  .join-steps .step p { margin: 0; font-size: clamp(0.8rem, 1.3vw, 1.05rem); color: var(--text-secondary); font-weight: 600; }
+
+  .site-url { font-family: var(--font-mono); font-size: clamp(1rem, 1.8vw, 1.4rem); color: var(--green); font-weight: 700; letter-spacing: 0.02em; }
+
+  /* Card do QR agora e clicavel: abre o modal ampliado */
+  .qr-card { cursor: zoom-in; transition: transform 0.25s var(--ease-out-expo); }
+  .qr-card:hover { transform: scale(1.03); }
+  .qr-card:focus-visible { outline: 3px solid var(--green); outline-offset: 6px; }
+  .qr-hint {
+    display: inline-flex; align-items: center; gap: 0.5em;
+    font-family: var(--font-mono); font-size: clamp(0.78rem, 1.2vw, 1rem);
+    color: var(--text-secondary); font-weight: 700;
+    letter-spacing: 0.04em; text-transform: uppercase;
+    margin-top: calc(-1 * clamp(0.2rem, 0.6vh, 0.5rem));
+  }
+  .qr-hint i { color: var(--green); font-size: 1.2em; }
+
+  /* ===========================================
+     MODAL DO QR (ampliado, fundo desfocado)
+     =========================================== */
+  .qr-modal {
+    position: fixed; inset: 0; z-index: 1000;
+    display: none;
+    align-items: center; justify-content: center;
+    padding: clamp(1rem, 4vh, 3rem);
+  }
+  .qr-modal.open { display: flex; }
+  .qr-modal .qr-backdrop {
+    position: absolute; inset: 0;
+    background: rgba(8, 13, 18, 0.7);
+    -webkit-backdrop-filter: blur(16px);
+    backdrop-filter: blur(16px);
+    animation: fadeIn 0.3s var(--ease-out-expo);
+  }
+  .qr-modal .qr-modal-inner {
+    position: relative; z-index: 1;
+    display: flex; flex-direction: column; align-items: center;
+    gap: clamp(1rem, 3vh, 2rem);
+    animation: modalPop 0.35s var(--ease-out-expo);
+  }
+  .qr-modal .qr-big {
+    background: #ffffff; border-radius: 22px;
+    padding: clamp(1rem, 2.5vh, 1.8rem); line-height: 0;
+  }
+  .qr-modal .qr-big img {
+    width: min(66vh, 80vw, 540px); height: auto; max-height: none;
+    display: block; border-radius: 10px;
+  }
+  .qr-access {
+    display: inline-flex; align-items: center; gap: 0.6em;
+    background: var(--green); color: #04180d;
+    font-family: var(--font-display); font-weight: 800;
+    font-size: clamp(1.05rem, 2.1vw, 1.55rem);
+    padding: clamp(0.7rem, 1.6vh, 1.1rem) clamp(1.4rem, 3vw, 2.4rem);
+    border-radius: 999px; text-decoration: none;
+    transition: transform 0.2s var(--ease-out-expo), filter 0.2s;
+  }
+  .qr-access i { font-size: 1.2em; }
+  .qr-access:hover { transform: translateY(-2px); filter: brightness(1.08); }
+  .qr-close {
+    position: absolute; top: clamp(1rem, 3vh, 2rem); right: clamp(1rem, 3vw, 2rem);
+    z-index: 2;
+    width: clamp(2.6rem, 5vw, 3.4rem); height: clamp(2.6rem, 5vw, 3.4rem);
+    border-radius: 999px; border: 2px solid var(--line);
+    background: var(--bg-2); color: var(--text-primary);
+    display: flex; align-items: center; justify-content: center;
+    font-size: clamp(1.2rem, 2.4vw, 1.7rem); cursor: pointer;
+    transition: border-color 0.2s, transform 0.2s;
+  }
+  .qr-close:hover { border-color: var(--green); color: var(--green); transform: rotate(90deg); }
+
+  @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+  @keyframes modalPop { from { opacity: 0; transform: scale(0.94); } to { opacity: 1; transform: scale(1); } }
+</style>
+</head>
+<body>
+
+<!-- Barra de progresso -->
+<div class="progress-bar" id="progressBar"></div>
+
+<!-- Pontos de navegacao (gerados via JS) -->
+<nav class="nav-dots" id="navDots"></nav>
+
+<!-- Dica de teclado -->
+<div class="keyboard-hint"><i class="ti ti-arrows-vertical"></i> ou espaco para navegar</div>
+
+<!-- ===========================================
+     SLIDE 1: ABERTURA
+     =========================================== -->
+<section class="slide title-slide" id="slide-1">
+  <div class="bg-layer grid-bg"></div>
+  <div class="ghost-y">Y</div>
+  <div class="slide-content">
+    <p class="kicker reveal">Dinamica de macroeconomia ao vivo</p>
+    <h1 class="reveal">Três setores,<br>uma economia</h1>
+    <p class="subtitle reveal">A turma inteira vira uma economia. Cada aluno controla uma peça do produto de equilíbrio. As decisões de todos se somam num único resultado.</p>
+    <div class="sector-row reveal">
+      <div class="sector-chip familias"><i class="ti ti-home"></i> Famílias</div>
+      <div class="sector-chip empresas"><i class="ti ti-building-factory"></i> Empresas</div>
+      <div class="sector-chip governo"><i class="ti ti-building-bank"></i> Governo</div>
+    </div>
+  </div>
+</section>
+
+<!-- ===========================================
+     SLIDE 2: A FORMULA
+     =========================================== -->
+<section class="slide alt formula-slide" id="slide-2">
+  <div class="bg-layer grid-bg"></div>
+  <div class="slide-content">
+    <div class="heading-row reveal">
+      <i class="ti ti-calculator"></i>
+      <h2>A equação que move tudo</h2>
+    </div>
+
+    <div class="equation-box reveal-scale">
+      <span>Y =</span>
+      <span class="frac"><span class="num">1</span><span class="bar"></span><span class="den">1 - c1</span></span>
+      <span class="eq-accent">×</span>
+      <span>( c0 + I + G - c1 × T )</span>
+    </div>
+
+    <div class="var-grid reveal">
+      <div class="var-card familias"><div class="sym">c0</div><div class="lbl">Consumo autônomo</div></div>
+      <div class="var-card familias"><div class="sym">c1</div><div class="lbl">Propensão a consumir</div></div>
+      <div class="var-card empresas"><div class="sym">I</div><div class="lbl">Investimento</div></div>
+      <div class="var-card governo"><div class="sym">G</div><div class="lbl">Gasto público</div></div>
+      <div class="var-card governo"><div class="sym">T</div><div class="lbl">Impostos</div></div>
+    </div>
+
+    <div class="callout reveal">
+      <i class="ti ti-bulb"></i>
+      <span><strong class="text-gold">1 / (1 - c1)</strong> é o multiplicador: cada real gasto se espalha e volta multiplicado pela economia inteira.</span>
+    </div>
+  </div>
+</section>
+
+<!-- ===========================================
+     SLIDE 3: MECANICA DO JOGO
+     =========================================== -->
+<section class="slide mech-slide" id="slide-3">
+  <div class="bg-layer grid-bg"></div>
+  <div class="ghost-y">3x</div>
+  <div class="slide-content">
+    <div class="heading-row reveal">
+      <i class="ti ti-cards"></i>
+      <h2>Como o jogo funciona</h2>
+    </div>
+    <ul class="mech-list">
+      <li class="reveal"><span class="num">01</span><p>Cada aluno escolhe um setor: <strong>Famílias</strong>, <strong>Empresas</strong> ou <strong>Governo</strong>, e controla os parâmetros daquele setor.</p></li>
+      <li class="reveal"><span class="num">02</span><p>O valor que entra no cálculo é a <strong>média do setor inteiro</strong>. Combinar com o grupo antes de enviar muda o resultado.</p></li>
+      <li class="reveal"><span class="num">03</span><p>São <strong>3 rodadas</strong>, cada uma com um evento econômico diferente que muda os limites disponíveis.</p></li>
+      <li class="reveal"><span class="num">04</span><p>Uma rodada afeta a próxima: a <strong>poupança</strong> de hoje define quanto as Empresas podem investir amanhã.</p></li>
+    </ul>
+  </div>
+</section>
+
+<!-- ===========================================
+     SLIDE 4: PONTUACAO
+     =========================================== -->
+<section class="slide alt score-slide" id="slide-4">
+  <div class="bg-layer grid-bg"></div>
+  <div class="slide-content">
+    <div class="heading-row reveal">
+      <i class="ti ti-trophy"></i>
+      <h2>Como pontuar</h2>
+    </div>
+
+    <div class="mission-grid reveal">
+      <div class="mission-card familias">
+        <div class="head"><i class="ti ti-home"></i> Famílias</div>
+        <p>Missão: bem-estar. Consumir o máximo possível sem se endividar.</p>
+      </div>
+      <div class="mission-card empresas">
+        <div class="head"><i class="ti ti-building-factory"></i> Empresas</div>
+        <p>Missão: crescimento. PIB alto investindo com ousadia.</p>
+      </div>
+      <div class="mission-card governo">
+        <div class="head"><i class="ti ti-building-bank"></i> Governo</div>
+        <p>Missão: equilíbrio. PIB alto mantendo o déficit baixo.</p>
+      </div>
+    </div>
+
+    <div class="bonus-row reveal">
+      <div class="bonus-card">
+        <i class="ti ti-target-arrow"></i>
+        <p>Se o <strong>PIB da rodada bater a meta</strong>, os três setores ganham um <strong>bônus coletivo</strong> juntos.</p>
+      </div>
+      <div class="bonus-card">
+        <i class="ti ti-chart-bar"></i>
+        <p>Os pontos das <strong>3 rodadas se somam</strong> num ranking final. Missão própria e meta coletiva contam juntas.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ===========================================
+     SLIDE 5: ENTRAR NO JOGO (QR CODE)
+     =========================================== -->
+<section class="slide qr-slide" id="slide-5">
+  <div class="bg-layer grid-bg"></div>
+  <div class="slide-content">
+    <p class="kicker reveal">Vamos começar</p>
+    <h2 class="reveal">Entrem no jogo</h2>
+
+    <div class="qr-card reveal-scale" id="qrTrigger" role="button" tabindex="0" aria-label="Ampliar QR code e acessar o link">
+      <img src="data:image/png;base64,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" alt="QR code para entrar na sala" />
+    </div>
+
+    <div class="join-steps reveal">
+      <div class="step"><span class="n">1</span><p>Aponte a câmera para o QR code</p></div>
+      <div class="step"><span class="n">2</span><p>Escolha seu setor</p></div>
+      <div class="step"><span class="n">3</span><p>Aguarde o mestre iniciar</p></div>
+    </div>
+
+    <p class="qr-hint reveal"><i class="ti ti-zoom-in"></i> Toque no código para ampliar</p>
+  </div>
+</section>
+
+<!-- ===========================================
+     MODAL DO QR: ampliado com fundo desfocado e link direto
+     =========================================== -->
+<div class="qr-modal" id="qrModal" aria-hidden="true">
+  <div class="qr-backdrop" data-close></div>
+  <button class="qr-close" id="qrClose" aria-label="Fechar" data-close><i class="ti ti-x"></i></button>
+  <div class="qr-modal-inner">
+    <div class="qr-big">
+      <img id="qrModalImg" src="" alt="QR code ampliado para entrar na sala" />
+    </div>
+    <a class="qr-access" href="https://arthurdouradodev.github.io/macroeconomia-usp/" target="_blank" rel="noopener">
+      <i class="ti ti-external-link"></i> Acessar link
+    </a>
+  </div>
+</div>
+
+<script>
+/* ===========================================
+   CONTROLADOR DA APRESENTACAO
+   Navegacao por teclado, toque, scroll e pontos.
+   =========================================== */
+class SlidePresentation {
+  constructor() {
+    this.slides = Array.from(document.querySelectorAll('.slide'));
+    this.currentSlide = 0;
+    this.progressBar = document.getElementById('progressBar');
+    this.navDotsContainer = document.getElementById('navDots');
+
+    this.setupNavDots();
+    this.setupIntersectionObserver();
+    this.setupKeyboardNav();
+    this.setupTouchNav();
+    this.setupWheelNav();
+    this.setupProgressBar();
+
+    // Revela o primeiro slide imediatamente ao carregar
+    this.slides[0].classList.add('visible');
+  }
+
+  setupNavDots() {
+    // Sempre limpa antes de montar, evita pontos duplicados se o arquivo for reaberto
+    this.navDotsContainer.innerHTML = '';
+    this.slides.forEach((slide, i) => {
+      const dot = document.createElement('button');
+      dot.className = 'nav-dot' + (i === 0 ? ' active' : '');
+      dot.setAttribute('aria-label', 'Ir para o slide ' + (i + 1));
+      dot.addEventListener('click', () => this.goTo(i));
+      this.navDotsContainer.appendChild(dot);
+    });
+  }
+
+  setupIntersectionObserver() {
+    const observer = new IntersectionObserver((entries) => {
+      entries.forEach((entry) => {
+        if (entry.isIntersecting) {
+          entry.target.classList.add('visible');
+          const idx = this.slides.indexOf(entry.target);
+          if (idx !== -1) this.updateActive(idx);
+        }
+      });
+    }, { threshold: 0.5 });
+    this.slides.forEach((slide) => observer.observe(slide));
+  }
+
+  updateActive(idx) {
+    this.currentSlide = idx;
+    const dots = this.navDotsContainer.querySelectorAll('.nav-dot');
+    dots.forEach((d, i) => d.classList.toggle('active', i === idx));
+    if (this.progressBar) {
+      this.progressBar.style.width = ((idx + 1) / this.slides.length) * 100 + '%';
+    }
+  }
+
+  setupProgressBar() {
+    this.updateActive(0);
+  }
+
+  goTo(idx) {
+    const clamped = Math.max(0, Math.min(this.slides.length - 1, idx));
+    this.slides[clamped].scrollIntoView({ behavior: 'smooth' });
+  }
+
+  setupKeyboardNav() {
+    document.addEventListener('keydown', (e) => {
+      // Nao navegar entre slides enquanto o modal do QR estiver aberto
+      if (document.getElementById('qrModal').classList.contains('open')) return;
+      if (['ArrowDown', 'ArrowRight', 'PageDown', ' '].includes(e.key)) {
+        e.preventDefault();
+        this.goTo(this.currentSlide + 1);
+      } else if (['ArrowUp', 'ArrowLeft', 'PageUp'].includes(e.key)) {
+        e.preventDefault();
+        this.goTo(this.currentSlide - 1);
+      }
+    });
+  }
+
+  setupTouchNav() {
+    let touchStartY = 0;
+    document.addEventListener('touchstart', (e) => { touchStartY = e.touches[0].clientY; }, { passive: true });
+    document.addEventListener('touchend', (e) => {
+      const delta = touchStartY - e.changedTouches[0].clientY;
+      if (Math.abs(delta) > 50) {
+        this.goTo(this.currentSlide + (delta > 0 ? 1 : -1));
+      }
+    }, { passive: true });
+  }
+
+  setupWheelNav() {
+    let locked = false;
+    document.addEventListener('wheel', (e) => {
+      if (document.getElementById('qrModal').classList.contains('open')) return;
+      if (locked) return;
+      if (Math.abs(e.deltaY) < 20) return;
+      locked = true;
+      this.goTo(this.currentSlide + (e.deltaY > 0 ? 1 : -1));
+      setTimeout(() => { locked = false; }, 700);
+    }, { passive: true });
+  }
+}
+
+new SlidePresentation();
+
+/* ===========================================
+   MODAL DO QR CODE
+   Abre ao clicar/tocar no card; fecha no X, no fundo ou com Esc.
+   A imagem ampliada reaproveita a mesma do slide (sem duplicar dados).
+   =========================================== */
+(function setupQrModal() {
+  const trigger = document.getElementById('qrTrigger');
+  const modal = document.getElementById('qrModal');
+  const modalImg = document.getElementById('qrModalImg');
+  const slideImg = trigger ? trigger.querySelector('img') : null;
+  if (!trigger || !modal || !modalImg || !slideImg) return;
+
+  function open() {
+    if (!modalImg.getAttribute('src')) modalImg.src = slideImg.src;
+    modal.classList.add('open');
+    modal.setAttribute('aria-hidden', 'false');
+  }
+  function close() {
+    modal.classList.remove('open');
+    modal.setAttribute('aria-hidden', 'true');
+  }
+
+  trigger.addEventListener('click', open);
+  trigger.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); open(); }
+  });
+
+  // Fecha ao clicar no fundo desfocado ou no botao de fechar (data-close)
+  modal.querySelectorAll('[data-close]').forEach((el) => el.addEventListener('click', close));
+
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && modal.classList.contains('open')) close();
+  });
+})();
+</script>
+</body>
+</html>
